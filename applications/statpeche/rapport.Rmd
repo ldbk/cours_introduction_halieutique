@@ -66,6 +66,13 @@ lanseiche<-lan%>%filter(taxon%in%listeseiche$ESP_COD_FAO)
 
 table(lanseiche$taxon)
 
+#selectionner les engins
+listedrague<-refmet%>%filter(grepl("à perche",METIER_DCF_6_LIB))
+landrague<-lan%>%filter(metier6%in%listedrague$METIER_DCF_6_COD)
+
+table(landrague$metier6)
+
+
 #combine et résume
 lanmur<-lan%>%
   group_by(year)%>%
