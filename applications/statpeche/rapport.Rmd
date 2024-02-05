@@ -83,13 +83,14 @@ ggplot(lanmur,aes(x=year,y=w))+geom_point()+geom_smooth()
 
 #un exemple de barplot joli
 listeraie<-refspp%>%filter(grepl("Raie",ESP_LIB_FAO_FRANCAIS))
-lanraie<-landings%>%filter(taxon%in%listeraie$ESP_COD_FAO)
+lanraie<-landings%>%filter(taxon%in%listeraie$ESP_COD_FAO)%>%
+  filter(port%in%c("LCN","XCH"))
 #combine et résume
 lanraie<-lanraie%>%
-  group_by(year,taxon)%>%
+  group_by(year,taxon,port)%>%
   summarise(w=sum(landWt,na.rm=T))
        
-ggplot(lanraie,aes(x=year,y=w,fill=taxon))+geom_bar(stat="identity")     
+ggplot(lanraie,aes(x=year,y=w,fill=taxon))+geom_bar(stat="identity")+facet_grid(~port)    
   
 
 
