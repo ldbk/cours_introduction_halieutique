@@ -60,6 +60,12 @@ table(lan3spp$taxon)
 
 lanPORT<-lan%>%filter(port%in%c("LCN","XCN"))
 
+#selectionner les seiches
+listeseiche<-refspp%>%filter(grepl("Seiche",ESP_LIB_FAO_FRANCAIS))
+lanseiche<-lan%>%filter(taxon%in%listeseiche$ESP_COD_FAO)
+
+table(lanseiche$taxon)
+
 #combine et résume
 lanmur<-lan%>%
   group_by(year)%>%
