@@ -108,9 +108,16 @@ lanraieall<-
 
 
 #test de tendance
-#trend.test
 
-#
+tmp<-lanraie%>%
+  filter(taxon=="RJC",port=="LCN")%>%
+  arrange(year)
+cor.test(tmp$year,tmp$w,method="spearman")
+
+tmp<-lanraie%>%filter(taxon=="RJC",port=="XCH")%>%
+  arrange(year)
+cor.test(tmp$year,tmp$w,method="spearman")
+
 
 ```
 
