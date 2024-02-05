@@ -53,17 +53,30 @@ library(ggplot2)
 lan<-left_join(landings,refspp,by=c("taxon"="ESP_COD_FAO"))
 
 #filtre
-lan<-lan%>%filter(taxon=="MUR")
+lanMUR<-lan%>%filter(taxon=="MUR")
+lan3spp<-lan%>%filter(taxon%in%c("MUR","BSS","HOM"))
+
+table(lan3spp$taxon)
+
+lanPORT<-lan%>%filter(port%in%c("LCN","XCN"))
 
 #combine et résume
-lanmur<-lan%>%group_by(year)%>%
+lanmur<-lan%>%
+  group_by(year)%>%
   summarise(w=sum(landWt,na.rm=T))
 
 #plot
 ggplot(lanmur,aes(x=year,y=w))+geom_point()+geom_smooth()
 
+# exemple de sélection multiple
+listeseche<-refspp%>%
+            
+  
+
+
+
 #test de tendance
-trend.test
+#trend.test
 
 #
 
