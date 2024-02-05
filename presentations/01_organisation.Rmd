@@ -1,0 +1,92 @@
+---
+title: "Introduction à l'halieutique"
+subtitle: Organisation et contexte
+date: "2024-02-04"
+output:
+  slidy_presentation: default
+bibliography: /Users/moi/Zotero/exportdb/My Library.bib
+csl: 'apa.csl'
+link-citations: true
+linkcolor: blue
+urlcolor: blue
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Information générale
+
+Ce document présente une introduction à la gestion de pêche et aux outils numériques associés. 
+Il vient en support d’un cours destiné aux étudiants en Master 2 Sciences de la Mer Pro de l'université de Caen.
+Ce cours est accompagné d'un ensemble de travaux pratiques permettant d’appréhender la manipulation de l'information relative à la pêche et son analyse, en utilisant essentiellement le logiciel R [@r2020].
+Ce document est sous license libre, et plus précisement [MIT](https://fr.wikipedia.org/wiki/Licence_MIT).
+Les chaînes de caractères [bleues](https://fr.wikipedia.org/wiki/Bleu) sont cliquables et contiennent des liens hypertextes renvoyant vers des ressources extérieures.
+Les références telles que @baumer2014 renvoient vers la bibliographie en fin de document (cliquable si le document est en affichage long).
+
+La navigation au sein de ce document html peut s'effectuer à l'aide des touches suivantes :
+
+- flèches droite et gauche pour naviguer en mode présentation
+- C : plan du document
+- F : fait apparaître ou disparaître la barre d'état de la présentation
+- A : affiche le document sous la forme d'une présentation ou d'un document long (facilite l'impression par exemple)
+- B et S : augmente ou diminue la taille d'affichage des caractères
+
+## Organisation
+
+- 12 heures : 
+  - lundi 5 février 2024 (9h-12h et  14h-17h), 
+  - mardi 6 février 2024 (9h-12h),
+  - mercredi 7 février 2024 (9h-12h)
+- en présentiel
+- alternance de présentations et d'exercices pratiques avec des pauses régulières
+- matériels : un ordinateur avec [RStudio Desktop](https://rstudio.com/products/rstudio/download/) installé, et une connection internet  
+
+## Ressources 
+
+Les ressources se trouvent ici : **<https://github.com/ldbk/cours_introduction_halieutique>** :
+
+- le répertoire **presentations** contient ce support en html et Rmarkdown
+- le répertoire **applications** contient des ressources liées aux exemples pratiques
+- le répertoire **img** contient les images illustrant ces supports
+
+## L'intervenant
+
+Laurent Dubroca (prénom.nom@ifremer.fr), Ifremer, laboratoire Ressources Halieutiques de Port-en-Bessin. 
+
+### [Ifremer](https://wwz.ifremer.fr/) ?
+
+<div class='left' style='float:left;width:70%' text-align='justify'>
+"L'Institut français de recherche pour l’exploitation de la mer (Ifremer) contribue, par ses travaux et expertises,
+à la connaissance des océans et de leurs ressources, à la surveillance du milieu marin et littoral et au
+développement durable des activités maritimes. L’Ifremer est source de connaissances, d’innovation, de
+données de surveillance et d’expertise pour le monde de la mer, à la fois en matière de politique publique et
+d’activité socio-économique. Il est la seule structure de ce type en Europe.
+Fondé en 1984, l'Ifremer est un établissement public à caractère industriel et commercial (EPIC), placé sous
+la tutelle conjointe du ministère de l'Enseignement supérieur, de la Recherche, du ministère de la Transition écologique et de la Cohésion des territoires et du ministère de l'Agriculture et de la souveraineté alimentaire."
+
+**Composantes** : 5 centres et 24 d'implantations en métropole et dans le monde <https://www.ifremer.fr/fr/l-ifremer-en-france-et-dans-le-monde>.
+
+**Missions** : approche intégrée de la recherche en sciences marines
+
+- appui à la puissance publique : pour le déploiement des politiques maritimes (directive cadre, pêche...)
+- valorisation économique : partenariat avec le monde industriel ou économique, innovations et transfert de technologies
+- recherche et développement : développements technologiques, infrastructures et moyens d'essais
+- gestion de la flotte : gestion de la flotte océanographique française
+</div>
+
+<div class='right' style='float:right;width:30%'>
+```{r, echo=FALSE, out.width="100%", fig.cap=""}
+knitr::include_graphics("../img/ifr.png")
+```
+
+```{r, echo=FALSE, out.width="100%", fig.cap=""}
+knitr::include_graphics("../img/ifrmap.png")
+```
+
+```{r, echo=FALSE, out.width="100%", fig.cap=""}
+knitr::include_graphics("../img/thalassa.jpg")
+```
+</div>
+
+## Bibliographie

@@ -1,0 +1,49 @@
+---
+title: "Structure"
+---
+
+# Introduction
+
+Contexte du cours, organisation, intervenant et l'Ifremer
+
+# La pêche
+
+## Définition
+
+Définition, contexte global, régional, national
+stock
+engins de pêches
+effort
+
+## gestion des pêches
+
+## organisation
+
+organisation européenne des exemples
+TAC et quotas
+europe vs nation (exemples sole vs rouget)
+
+## impacts de la pêche et intercations avec écosys et autres act
+
+apports de proteines alimentation
+captures accidentelles
+EMR (app : utiliser données AIS EMODNET et croisée avec Courseille pour établir
+une diminution de l'activité)
+effet reserve, fishing down ecosystem
+planification maritime spatiale
+
+## modélisation
+
+Arg
+
+# les données
+
+captures, échantillonnages, 
+
+Bases de données disponibles
+
+## appli
+
+tendances générales en France de 2010 à 2022 représentations graphiques
+captures, échantillonnages and co 2010-2022 pointer vers sih.ifremer.fr
+

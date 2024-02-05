@@ -1,0 +1,271 @@
+---
+title: "Introduction à l'halieutique"
+subtitle: ""
+date: "2024-02-04"
+output:
+  slidy_presentation: default
+bibliography: /Users/moi/Zotero/exportdb/My Library.bib
+csl: apa.csl
+link-citations: yes
+linkcolor: blue
+urlcolor: blue
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Définitions générales
+
+- pêche : activité humaine consistant à capturer des animaux aquatiques dans leur milieu
+- animaux : poissons, crustacés, mollusques, céphalopodes, gastéropodes, etc.
+- milieu : **océans, mers**, cours d'eau, lacs, etc.
+- activités humaines : **pêche professionnelle** (à visée commerciale: industrielle, artisanale), récréative, sportive ou de subsistance
+- aquaculture : définition
+- captures : techniques et engins
+- halieutique : ensemble des disciplines scientifiques relatives à l'exploitation et la gestion des ressources vivantes des milieux aquatiques
+
+*Nous nous intéresserons ici essentiellement aux pêches maritimes*
+
+[lien](<https://fr.wikipedia.org/wiki/P%C3%AAche_(halieutique)>)
+
+## Définitions halieutiques
+
+Source : @gascuel2008
+
+### Caractéristation de la ressource
+
+#### Population et stock
+
+- population biologique : ensemble des individus vivant dans un écosystème donné avec des caractères communs transmissibles par hérédité (~population isolée et homogène)
+- stock (théorie) : fraction exploitable d'une population biologique
+- stock (unité de gestion) : 
+  - ensemble des individus exploitables d'une espèce donnée, isolé des stocks voisins, homogène
+  - unité de travail pour les travaux en dynamique des populations
+  
+```{r, echo=FALSE, out.width="70%", fig.cap=""}
+knitr::include_graphics("../img/ices_div.png")
+```
+
+[source](https://www.ices.dk/data/Documents/Maps/ICES-Ecoregions-hybrid-statistical-areas.png)
+
+  
+#### Recrutement et cohorte
+
+- recrutement : processus par lesquel les individus acquièrent une propriété qui les rend exploitable par la pêche (déplacement vers les zones de pêche, taille, comportement, etc.)
+- âge et taille de recrutement : séparation entre une phase jeune (larves, post-larves et premiers stades juvéniles) à mortalité naturelle élevée, plasticité phénotypique, sensibilité à l'environnement vs phase plus âgée (juvéniles et adultes) moins sensible à la variabilité environnementale
+- par extension : ensemble des individus recrutés à une date donnée
+
+- cohorte : ensemble des individus d'un stock donné, né à une période donnée. En général une cohorte par an (si une seule saison de reproduction). Définie par l'année de naissance ou année de recrutement
+
+### Phase exploitable et phase exploitée
+
+- accessibilité des cohortes à l'exploitation 
+- résultante d'une mesure de gestion (maillage, période autorisée, etc.)
+
+```{r, echo=FALSE, out.width="70%", fig.cap=""}
+knitr::include_graphics("../img/cohorte_exploit.png")
+```
+
+#### Abondance, production et productivité biologique d'un stock
+
+- abondance : mesure de la quantité d'individus présents dans le stock, en effectif (nombre d'individus, N) ou en biomasses (en tonnes, B)
+- production biologique d'un stock (P) : quantité nette d'individus (en nombre ou en biomasse) produite pendant un intervalle de temps.
+
+<div class='left' style='float:left;width:50%'>
+En effectif : $$ P=\frac{dN}{dt}$$
+</div>
+
+<div class='right' style='float:right;width:50%'>
+En biomasse : $$ P=\frac{dB}{dt}$$
+</div>
+
+- la production biologique (P) est la résultate de trois phénomènes : 
+  - la reproduction : facteur d'accroissement de l'abondance
+  - la mortalité : facteur de décroissance
+  - la croissance pondérale : facteur de croissance (dans le raisonnement en biomasse)
+
+- la productivité biologique est le ratio de la production biologique sur l'abondance (donc la production par individu ou unité de biomasse) :
+
+<div class='left' style='float:left;width:50%'>
+En effectif : $P=\frac{1}{N}\frac{dN}{dt}$
+</div>
+
+<div class='right' style='float:right;width:50%'>
+En biomasse : $P=\frac{1}{B}\frac{dB}{dt}$
+</div>
+
+### Caractérisation de l'exploitation
+
+#### Flottille et métier
+
+Fichier FPC, engin et modalités des captures
+
+
+#### Effort de pêche
+
+- effort de pêche : mesure de l'activité de pêche 
+- utilisé dans les modèles de dynamiques de population et base des mesures de gestion des stocks
+- exemple : nombre de navires, nombre de jours de pêches
+- élément essentiel de la variabilité de l'exploitation
+
+  - effort de pêche nominal : paramètre de gestion qui mesure l'accumulation des moyens de capture pour exploiter un stock par unité de temps
+  - effort de pêche effectif : paramètre d'évaluation qui mesure la pression réelle exercée sur un stock par unité de temps
+
+- diagramme d'exploitation et régime d'exploitation
+
+
+### Capturabilité et captures
+
+
+
+
+- stock
+- bon état des stocks : 
+- exploitation durable d'un stock
+
+## Modélisation
+
+[ressources](<https://haddonm.github.io/URMQMF/on-modelling.html>)
+
+### Généralités
+
+- tout modèle est une abstraction ou une simulation de ce qui est connu sur le processus ou le phénomène simulé
+- un modèle n'est pas une copie conforme de ces connaissances : la modélisation est une affaire de choix sur les processus les plus structurants pour le processus
+- un modèle mathématique est un type de modèle (modèle physique, verbal, graphique, etc.)
+- déterministe ou stochastique
+- continu ou discret
+- réaliste ou général
+
+- paramètres :
+- variables :
+
+### Modèle de Scheafer
+
+Modèle de la dynamique de la biomasse d'un stock [@scheafer1957]
+Modèle logistique discret
+
+$$
+B_{t=0}=B_0
+$$
+
+$$
+B_{t+1}=B_{t}+rB_t(1-\frac{B_t}{K})-C_t
+$$
+avec
+
+- $t$ un indice associé au temps (année)
+- $B_t$ la biomasse à l'instant $t$
+- $r$ le taux de croissance
+- $K$ la biomasse maximale que le système peut atteindre (carrying capacity)
+- $C_t$ les captures à l'instant $t$
+
+Exemple : si $B_t$=10t, $r$=0.2, $K$=100t et $C_t$=1, $B_t+1$=10.8 
+$B_{t+1}=10+0.2*10*(1-10/100)-1=10.8
+
+Code !
+
+### Tester la dynamique du modèle
+
+## Les organisations de gestion
+
+Organisations internationales 
+Organisations régionales de gestions des pêches(ORGP - RFMO)
+
+Carte, ICES-CIEM, ICCAT, IOTC, CGPM-GFCM etc
+
+## Zone économique exclusive (ZEE)
+
+<div class='left' style='float:left;width:60%' text-align='justify'>
+
+Bande de mer ou d'océan située entre les eaux territoriales et les eaux internationales, sur laquelle un État riverain dispose de l'exclusivité d'exploitation des ressources. 
+
+Bande limitée par la ligne des 200 milles marins internationaux (370 km) à partir de la ligne de base en l'absence d'autre rivage. Si le rivage le plus proche est à moins de 200 milles nautiques, on utilise la frontière à mi-distance des lignes de base des deux pays riverains.
+
+</div>
+
+<div class='right' style='float:right;width:40%'>
+
+```{r, echo=FALSE, out.width="70%", fig.cap=""}
+knitr::include_graphics("../img/zee_local.png")
+```
+
+[source](https://fr.wikipedia.org/wiki/Zone_%C3%A9conomique_exclusive)
+
+</div>
+
+### Quelques chiffres
+
+ - océan mondial : 70.8% de la surface de la Terre (361 millions de km2)
+ - eaux internationales : 65% de la surface des océans
+
+
+```{r, echo=FALSE, out.width="80%", fig.cap=""}
+knitr::include_graphics("../img/zee_tab.png")
+```
+
+[source](https://fr.wikipedia.org/wiki/Zone_%C3%A9conomique_exclusive)
+
+### ZEE globale
+
+```{r, echo=FALSE, out.width="80%", fig.cap=""}
+knitr::include_graphics("../img/zee_world.jpg")
+```
+
+[source](<https://www.marineregions.org/eezmapper.php>)
+
+### ZEE de la France
+
+```{r, echo=FALSE, out.width="80%", fig.cap=""}
+knitr::include_graphics("../img/zee_france.png")
+```
+
+[source](<https://histoire-itinerante.fr/cartotheque/carte-des-zones-economiques-exclusives-zee-par-pays-de-lue/>)
+
+## Une activité globale
+
+### Océan mondial
+
+- 70% de la surface de la Terre
+- XX % de la population humaine en zone côtière
+- multiples usages
+- impacts des activités anthropiques
+
+Représentation de l'océan mondial avec ZEE et France
+
+[FAO, 2022](<https://www.fao.org/documents/card/en?details=cc0461en>)
+
+
+### Statistiques globales
+
+```{r, echo=FALSE, out.width="100%", fig.cap=""}
+knitr::include_graphics("../img/fao_prod1.png")
+```
+
+- production : **179 millions de t en 2020**, en augmentation (3% par an 1961-2019)
+- consommation par habitant (animaux aquatiques) : **20.2 kg en 2020**, 
+- 50% pêche / 50% aquaculture
+- 63% dans les eaux marines (70% pêche / 30% aquaculture) et 37% dans les eaux continentales (17% pêche / 83% aquaculture)
+
+
+[FAO, 2022](<https://www.fao.org/documents/card/en?details=cc0461en>)
+
+
+### Statistiques européennes
+
+blabllabla
+
+## Europe
+
+https://oceans-and-fisheries.ec.europa.eu/facts-and-figures/facts-and-figures-common-fisheries-policy_en
+
+## Techniques de pêche
+
+https://peche.ifremer.fr/Le-monde-de-la-peche/La-peche/comment/Les-engins/Casier
+
+## Applications
+
+Descriptifs des captures en France de 2010 à 2022
+
+
+## Bibliographie
