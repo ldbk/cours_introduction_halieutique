@@ -1,0 +1,94 @@
+---
+title: "Analyse des données de pêche française de 2010 à 2022"
+output:
+  html_document: default
+  word_document: default
+date: "2024-02-05"
+author: moi
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#packages
+library(dplyr)
+library(ggplot2)
+```
+
+## Consignes
+
+- un rapport court en Rmarkdown
+- une introduction qui contextualise l'analyse (voir <https://sih.ifremer.fr/Publications/Fiches-regionales> et <https://sih.ifremer.fr/Debarquements-effort-de-peche/Sacrois>)
+- une description des jeux de données utilisées avec leurs caractéristiques principales (période temporelle, zone géographique, variables et descriptions des variables)
+- une analyse descriptive basée sur efforts.csv ou/et landings.csv : table et graphique, avec commentaire des résultats
+- une analyse statistique (test de tendance, analyse en composante principale, classification, anova...)
+- un commentaire des résultats de l'analyse
+- à envoyer à laurent.dubroca@ifremer.fr avant 9h demain matin (le fichier Rmarkdown et le fichier html)
+
+
+```{r,echo=T}
+dat<-rnorm(100)
+plot(dat)
+```
+
+## Matériels et méthodes
+
+### Données
+
+Les données sont stockées dans différents fichiers. Décrire la structure ici.
+
+```{r}
+landings<-read.csv("./data/landings.csv")
+efforts<-read.csv("./data/efforts.csv")
+
+refgear<-read.csv2("./data/REFERENTIEL_ENGINS.txt",fileEncoding="ISO-8859-1",sep="\t")
+refspp<-read.csv2("./data/REFERENTIEL_ESPECES.txt",fileEncoding="ISO-8859-1",sep="\t")
+refmet<-read.csv2("./data/REFERENTIEL_METIERS_DCF_6.txt",fileEncoding="ISO-8859-1",sep="\t")
+refport<-read.csv2("./data/REFERENTIEL_PORTS.txt",fileEncoding="ISO-8859-1",sep="\t")
+
+#jointure
+lan<-left_join(landings,refspp,by=c("taxon"="ESP_COD_FAO"))
+
+#filtre
+lan<-lan%>%filter(taxon=="MUR")
+
+#combine et résume
+lanmur<-lan%>%group_by(year)%>%
+  summarise(w=sum(landWt,na.rm=T))
+
+#plot
+ggplot(lanmur,aes(x=year,y=w))+geom_point()+geom_smooth()
+
+#test de tendance
+trend.test
+
+#
+
+```
+
+
+
+
+
+
+
+### Sous-partie de l'intro
+
+BLABALBALBALBA
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
