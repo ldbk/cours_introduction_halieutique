@@ -45,6 +45,10 @@ refspp<-read.csv2("./data/REFERENTIEL_ESPECES.txt",fileEncoding="ISO-8859-1",sep
 refmet<-read.csv2("./data/REFERENTIEL_METIERS_DCF_6.txt",fileEncoding="ISO-8859-1",sep="\t")
 refport<-read.csv2("./data/REFERENTIEL_PORTS.txt",fileEncoding="ISO-8859-1",sep="\t")
 
+
+library(dplyr)
+library(ggplot2)
+
 #jointure
 lan<-left_join(landings,refspp,by=c("taxon"="ESP_COD_FAO"))
 
