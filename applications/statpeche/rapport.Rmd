@@ -36,7 +36,7 @@ plot(dat)
 
 Les données sont stockées dans différents fichiers. Décrire la structure ici.
 
-```{r}
+```{r include=FALSE}
 landings<-read.csv("./data/landings.csv")
 efforts<-read.csv("./data/efforts.csv")
 
@@ -92,6 +92,18 @@ lanraie<-lanraie%>%
        
 ggplot(lanraie,aes(x=year,y=w,fill=taxon))+geom_bar(stat="identity")+facet_grid(~port)    
   
+#trop de raie : selection des les espèces majoritaire
+lanraieall<-
+  lanraie<-landings%>%filter(taxon%in%listeraie$ESP_COD_FAO)%>%
+  filter(port%in%c("LCN","XCH"))%>%
+  group_by(taxon,port)%>%
+  summarise(w=sum(landWt,na.rm=T))%>%
+  arrange(port,desc(w))%>%
+  group_by(port)%>%
+  mutate(totport=sum(w))%>%
+  mutate(raieperc=round(w/totport*100,2))
+
+
 
 
 
