@@ -1,0 +1,168 @@
+---
+title: "Modèle de surplus"
+author: "moi"
+date: "2024-02-05"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#library
+library(dplyr)
+library(ggplot2)
+library(MQMF)
+library(knitr)
+```
+
+## Introduction
+
+Test du modèle de production de Scheafer. L'ensemble des exemples est tiré de [ressources](<https://haddonm.github.io/URMQMF/on-modelling.html>), qui utilise le package *MQMF*.
+
+## Approche manuelle
+
+```{r appman}
+#test modèle de Scheaffer
+B1=10+0.2*10*(1-10/100)-1
+
+#écriture sous forme de fonction
+B2<-function(B1,C1,r,K){
+  B2<-B1+r*B1*(1-B1/K)-C1
+  return(B2)
+}
+
+B2(10,1,0.2,100)
+
+B2(10,1,2.8,100)
+
+B2(10,0,seq(0,1,.1),100)
+```
+
+
+## Etude simple du modèle
+
+```{r modsimple}
+#function definition
+surprod <- function(Nt,r,K) return((r*Nt)*(1-(Nt/K)))
+densdep <- function(Nt,K) return((1-(Nt/K)))
+#parameter
+r <- 1.2; K <- 1000.0; Nt <- seq(10,1000,10)
+#run and create the output
+
+plot1(Nt,surprod(Nt,r,K),xlab="Population Nt",ylab="Production")
+plot1(Nt,densdep(Nt,K),xlab="Population Nt",ylab="Density-Dependence")
+```
+
+## Comportement du modèle 
+
+La fonction `discretelogistic`du package `MQMF` fait ?
+Détailler et qualifier les paramètres du modèle. Vérifier ce que fait la fonction.
+
+
+```{r modetud1}
+yrs <- 100; rv=2.8;  Kv <- 1000.0; Nz=100; catch=0.0; p=1.0
+ans <- discretelogistic(r=rv,K=Kv,N0=Nz,Ct=catch,Yrs=yrs,p=p)
+avcatch <- mean(ans[(yrs-50):yrs,"nt"],na.rm=TRUE) #used in text
+label <- paste0("r=",rv," K=",Kv," Ct=",catch, " N0=",Nz," p=",p=p)
+plot(ans, main=label, cex=0.9, font=7) #Schaefer dynamics  #
+```
+
+```{r modetud2}
+yrs=600
+ans <- discretelogistic(r=2.55,K=1000.0,N0=100,Ct=0.0,Yrs=yrs)
+plot(ans)
+tail(ans,30)
+plot(ans[500:600,],type="b")
+```
+
+```{r modetud3}
+yrs <- 600
+ans <- discretelogistic(r=2.55,K=1000.0,N0=100,Ct=0.0,Yrs=yrs)
+#valeur moyenne arrondie sur les 100 dernières années
+avt <- round(apply(ans[(yrs-100):(yrs-1),2:3],1,mean),2)
+count <- table(avt)
+count[count > 1] # with r=2.55 you should find an 8-cycle limit
+
+#searches for unique solutions given an r value  see Table 3.2
+testseq <- seq(1.9,2.59,0.01)
+nseq <- length(testseq)
+result <- matrix(0,nrow=nseq,ncol=2,
+                 dimnames=list(testseq,c("r","Unique")))
+yrs <- 600
+for (i in 1:nseq) {  # i = 31
+  rval <- testseq[i]
+  ans <- discretelogistic(r=rval,K=1000.0,N0=100,Ct=0.0,Yrs=yrs)
+  ans <- ans[-yrs,] # remove last year, see str(ans) for why
+  ans[,"nt1"] <- round(ans[,"nt1"],3) #try hashing this out
+  result[i,] <- c(rval,length(unique(tail(ans[,"nt1"],100))))
+}
+kable(result)
+```
+
+## Captures et comportement du modèle
+```{r modelcapt1}
+#Effect of catches on stability properties of discretelogistic
+yrs=50; Kval=1000.0
+nocatch <- discretelogistic(r=2.56,K=Kval,N0=500,Ct=0,Yrs=yrs)
+catch50 <- discretelogistic(r=2.56,K=Kval,N0=500,Ct=50,Yrs=yrs)
+catch200 <- discretelogistic(r=2.56,K=Kval,N0=500,Ct=200,Yrs=yrs)
+catch300 <- discretelogistic(r=2.56,K=Kval,N0=500,Ct=300,Yrs=yrs)
+```
+
+```{r modelcapt2}
+#Effect of different catches on n-cyclic behaviour Fig3.4
+plottime <- function(x,ylab) {
+  yrs <- nrow(x)
+  plot1(x[,"year"],x[,"nt"],ylab=ylab,defpar=FALSE)
+  avB <- round(mean(x[(yrs-40):yrs,"nt"],na.rm=TRUE),3)
+  mtext(avB,side=1,outer=F,line=-1.1,font=7,cex=1.0)
+} # end of plottime
+#the oma argument is used to adjust the space around the graph
+par(mfrow=c(2,2),mai=c(0.25,0.4,0.05,0.05),oma=c(1.0,0,0.25,0))
+par(cex=0.75, mgp=c(1.35,0.35,0), font.axis=7,font=7,font.lab=7)
+plottime(nocatch,"Catch = 0")
+plottime(catch50,"Catch = 50")
+plottime(catch200,"Catch = 200")
+plottime(catch300,"Catch = 300")
+mtext("years",side=1,outer=TRUE,line=-0.2,font=7,cex=1.0)
+```
+
+
+## Chaos
+
+Voir l'article de May, R.M. (1976) Simple mathematical models with very complicated dynamics. Nature, 261: 459-467.
+
+```{r chaos,eval=F}
+#the R code for the bifurcation function  
+bifurcation <- function(testseq,taill=100,yrs=1000,limy=0,incx=0.001){  
+  nseq <- length(testseq)  
+  result <- matrix(0,nrow=nseq,ncol=2,  
+                  dimnames=list(testseq,c("r","Unique Values")))  
+  result2 <- matrix(NA,nrow=nseq,ncol=taill)  
+  for (i in 1:nseq) {    
+     rval <- testseq[i]  
+     ans <- discretelogistic(r=rval,K=1000.0,N0=100,Ct=0.0,Yrs=yrs)  
+     ans[,"nt1"] <- round(ans[,"nt1"],4)  
+     result[i,] <- c(rval,length(unique(tail(ans[,"nt1"],taill))))  
+     result2[i,] <- tail(ans[,"nt1"],taill)  
+  }    
+  if (limy[1] == 0) limy <- c(0,getmax(result2,mult=1.02))  
+  parset() # plot taill values against taill of each r value  
+  plot(rep(testseq[1],taill),result2[1,],type="p",pch=16,cex=0.1,  
+   ylim=limy,xlim=c(min(testseq)*(1-incx),max(testseq)*(1+incx)),  
+    xlab="r value",yaxs="i",xaxs="i",ylab="Equilibrium Numbers",  
+     panel.first=grid())  
+  for (i in 2:nseq)  
+      points(rep(testseq[i],taill),result2[i,],pch=16,cex=0.1)  
+  return(invisible(list(result=result,result2=result2)))  
+} # end of bifurcation  
+
+ #Alternative r value arrangements for you to try; Fig 3.3  
+ #testseq <- seq(2.847,2.855,0.00001) #hash/unhash as needed  
+ #bifurcation(testseq,limy=c(600,740),incx=0.0001) # t  
+ #testseq <- seq(2.6225,2.6375,0.00001) # then explore   
+ #bifurcation(testseq,limy=c(660,730),incx=0.0001)   
+testseq <- seq(1.9,2.975,0.0005) # modify to explore  
+bifurcation(testseq,limy=0)    
+```

@@ -1,0 +1,190 @@
+---
+title: "Modèle de surplus"
+author: "moi"
+date: "2024-02-05"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#library
+library(dplyr)
+library(ggplot2)
+library(MQMF)
+library(knitr)
+```
+
+## Introduction
+
+Test du modèle de production de Scheafer sur des données. L'ensemble des exemples est tiré de [ressources](<https://haddonm.github.io/URMQMF/on-modelling.html>), qui utilise le package *MQMF*.
+
+```{r ajust}
+#ajustement
+
+Schaefer<-function(par,data,verbose=FALSE){
+  r<-par[["r"]]
+  K<-par[["K"]]
+  Binit<-par[["Binit"]]
+  q<-par[["q"]]
+  year <- data$Year
+  C <- data$Catch
+  I <- data$Index
+  n <- length(year)
+  B <- numeric(n)
+  B[1] <- Binit
+  for(i in 1:(n-1))
+  {
+    B[i+1] <- max(B[i] + r*B[i]*(1-B[i]/K) - C[i], 1)
+  }
+  Ifit <- q * B
+
+  res <- log(I) - log(Ifit)
+  RSS <- sum(res^2)
+
+  pars <- c(r=r, K=K, Binit=Binit, q=q)
+  refpts <- c(HRmsy=0.5*r, Bmsy=0.5*K, MSY=0.25*r*K)
+
+  if(verbose)
+    list(B=B, HR=C/B, Ifit=Ifit, res=res, pars=pars, refpts=refpts, RSS=RSS)
+  else
+    RSS
+}
+```
+
+
+## Albacore d'Atlantic sud
+
+Des données
+
+```{r data}
+albacore <- read.table("albacore.dat", header=TRUE)
+plot(albacore)
+plot(albacore$Year,albacore$Catch,type="o",pch=20)
+kable(albacore)
+#ggplot2
+alba2<-albacore%>%tidyr::pivot_longer(2:3)
+ggplot(alba2,aes(x=Year,y=value))+geom_line()+facet_grid(~name)
+```
+
+Ajustement du modèle
+
+```{r ajustalba}
+init <- c(r=0.5, K=200, Binit=100, q=0.5)
+init <- c(r=0.3, K=200, Binit=300, q=0.1)
+
+
+Schaefer(par=init, albacore)
+optim(init, Schaefer, data=albacore)
+est <- optim(init, Schaefer, data=albacore)$par
+fit <- Schaefer(est, albacore, verbose=TRUE)
+
+par(mfrow=c(2,2))
+
+plot(albacore$Year, fit$Ifit, ylim=c(0,90), yaxs="i", type="l", lwd=4,
+     col="gray", xlab="Year", ylab="Biomass index",
+     main="Albacore: Fit to data")
+points(Index~Year, albacore)
+
+plot(albacore$Year, fit$B, type="l", ylim=c(0,300), yaxs="i", lwd=2,
+     xlab="Year", ylab="Biomass and catch", main="Albacore: Biomass and catch")
+points(Catch~Year, albacore, type="h", lwd=6)
+
+plot(albacore$Year, fit$HR, ylim=c(0,0.35), yaxs="i", type="l",
+     lwd=2, xlab="Year", ylab="Harvest rate", main="Albacore: Harvest rate")
+
+fit$pars
+fit$refpts
+```
+
+```{r ajust2}
+#test avec discretelogistic
+pars <- log(c(r=0.1, K=220, Binit=100, q=0.1))
+albnew<-albacore%>%transmute(year=Year,catch=Catch,cpue=Index)
+answer <- fitSPM(pars,albnew,schaefer=TRUE,maxiter=1000)
+exp(answer$estimate)
+outfit(answer)
+
+plotspmmod(answer$estimate,albnew)
+
+
+#test avec discretelogistic
+data(pttuna)
+pars <- log(c(r=0.25,K=2.1e06,Binit=2.2e06,sigma=0.2))
+answer <- fitSPM(pars,pttuna,schaefer=TRUE,maxiter=1000)
+outfit(answer,title="Pella-Tomlinson Data",digits=4)
+plotspmmod(answer$estimate,pttuna)
+```
+data(schaef); schaef <- as.matrix(schaef)
+param <- log(c(r=0.1,K=2250000,Binit=2250000,sigma=0.5))
+negatL <- negLL(param,simpspm,schaef,logobs=log(schaef[,"cpue"]))
+ans <- plotspmmod(inp=param,indat=schaef,schaefer=TRUE,
+                  addrmse=TRUE,plotprod=FALSE)
+
+
+
+#https://haddonm.github.io/URMQMF/surplus-production-models.html#management-advice
+################################################################################
+## South Atlantic albacore
+
+albacore <- read.table("albacore.dat", header=TRUE)
+init <- c(logr=log(0.5), logK=log(200), logBinit=log(100), logq=log(0.5))
+
+Schaefer(par=init, albacore)
+optim(init, Schaefer, data=albacore)
+est <- optim(init, Schaefer, data=albacore)$par
+fit <- Schaefer(est, albacore, verbose=TRUE)
+
+par(mfrow=c(2,2))
+
+plot(albacore$Year, fit$Ifit, ylim=c(0,90), yaxs="i", type="l", lwd=4,
+     col="gray", xlab="Year", ylab="Biomass index",
+     main="Albacore: Fit to data")
+points(Index~Year, albacore)
+
+plot(albacore$Year, fit$B, type="l", ylim=c(0,300), yaxs="i", lwd=2,
+     xlab="Year", ylab="Biomass and catch", main="Albacore: Biomass and catch")
+points(Catch~Year, albacore, type="h", lwd=6)
+
+plot(albacore$Year, fit$HR, ylim=c(0,0.35), yaxs="i", type="l",
+     lwd=2, xlab="Year", ylab="Harvest rate", main="Albacore: Harvest rate")
+
+fit$pars
+fit$refpts
+
+################################################################################
+## Georges Bank winter flounder
+
+flounder <- read.table("flounder.dat", header=TRUE)
+
+K.init <- 8 * mean(flounder$Catch)
+B.init <- 0.5 * K.init
+q.init <- flounder$Index[1] / B.init
+init <- c(logr=log(0.5), logK=log(K.init),
+          logBinit=log(B.init), logq=log(q.init))
+
+Schaefer(par=init, flounder)
+optim(init, Schaefer, data=flounder)
+optim(init, Schaefer, data=flounder, method="Nelder-Mead",
+      control=list(maxit=1e5, reltol=1e-10))
+nlminb(init, Schaefer, data=flounder, control=list(eval.max=1e4, iter.max=1e4))
+est <- nlminb(init, Schaefer, data=flounder,
+              control=list(eval.max=1e4, iter.max=1e4))$par
+fit <- Schaefer(est, flounder, verbose=TRUE)
+
+par(mfrow=c(2,2))
+
+plot(flounder$Year, fit$Ifit, ylim=c(0,8), yaxs="i", lwd=4, col="gray",
+     type="l", xlab="Year", ylab="Biomass index", main="Flounder: Fit to data")
+points(Index~Year, flounder)
+
+plot(flounder$Year, fit$B, type="l", ylim=c(0,15), yaxs="i", lwd=2,
+     xlab="Year", ylab="Biomass and catch", main="Flounder: Biomass and catch")
+points(Catch~Year, flounder, type="h", lwd=6)
+
+plot(flounder$Year, fit$HR, ylim=c(0,0.6), yaxs="i", type="l",
+     lwd=2, xlab="Year", ylab="Harvest rate", main="Flounder: Harvest rate")
+
+t(fit$pars)
+t(fit$refpts)

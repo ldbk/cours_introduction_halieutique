@@ -118,6 +118,16 @@ tmp<-lanraie%>%filter(taxon=="RJC",port=="XCH")%>%
   arrange(year)
 cor.test(tmp$year,tmp$w,method="spearman")
 
+#et si on faisait une analyse en composante principale ? Oh oui alors
+library(tidyr)
+lanwide<-landings%>%group_by(year,port,taxon)%>%
+  summarise(landWt=sum(landWt,na.rm=T))%>%
+  pivot_wider(values_from=landWt,names_from=port,values_fill=0)
+library(FactoMineR)
+rezpca<-PCA(lanwide[,3:224])
+
+hrez<-hclust(dist(lanwide[,3:224]))
+plot(hrez)
 
 ```
 
