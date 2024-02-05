@@ -81,9 +81,15 @@ lanmur<-lan%>%
 #plot
 ggplot(lanmur,aes(x=year,y=w))+geom_point()+geom_smooth()
 
-# exemple de sélection multiple
-listeseche<-refspp%>%
-            
+#un exemple de barplot joli
+listeraie<-refspp%>%filter(grepl("Raie",ESP_LIB_FAO_FRANCAIS))
+lanraie<-landings%>%filter(taxon%in%listeraie$ESP_COD_FAO)
+#combine et résume
+lanraie<-lanraie%>%
+  group_by(year,taxon)%>%
+  summarise(w=sum(landWt,na.rm=T))
+       
+ggplot(lanraie,aes(x=year,y=w,fill=taxon))+geom_bar(stat="identity")     
   
 
 
