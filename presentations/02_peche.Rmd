@@ -446,9 +446,6 @@ Fichier FPC, engin et modalités des captures
 
 ### Capturabilité et captures
 
-
-
-
 - stock
 - bon état des stocks : 
 - exploitation durable d'un stock
@@ -472,7 +469,8 @@ Fichier FPC, engin et modalités des captures
 ### Modèle de Scheafer
 
 Modèle de la dynamique de la biomasse d'un stock [@scheafer1957]
-Modèle logistique discret
+Modèle logistique discret,modèles globaux ou modèles de production ("surplus production models" en anglais).
+
 
 $$
 B_{t=0}=B_0

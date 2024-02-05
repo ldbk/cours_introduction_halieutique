@@ -122,36 +122,6 @@ Schaefer<-function(par,data,verbose=FALSE){
 
 
 
-Schaefer <- function(par, data, verbose=FALSE)
-{
-  r <- exp(par[["logr"]])
-  K <- exp(par[["logK"]])
-  Binit <- exp(par[["logBinit"]])
-  q <- exp(par[["logq"]])
-  year <- data$Year
-  C <- data$Catch
-  I <- data$Index
-  n <- length(year)
-  B <- numeric(n)
-  B[1] <- Binit
-  for(i in 1:(n-1))
-  {
-    B[i+1] <- max(B[i] + r*B[i]*(1-B[i]/K) - C[i], 1)
-  }
-  Ifit <- q * B
-
-  res <- log(I) - log(Ifit)
-  RSS <- sum(res^2)
-
-  pars <- c(r=r, K=K, Binit=Binit, q=q)
-  refpts <- c(HRmsy=0.5*r, Bmsy=0.5*K, MSY=0.25*r*K)
-
-  if(verbose)
-    list(B=B, HR=C/B, Ifit=Ifit, res=res, pars=pars, refpts=refpts, RSS=RSS)
-  else
-    RSS
-}
-
 ################################################################################
 ## South Atlantic albacore
 
@@ -180,7 +150,18 @@ plot(albacore$Year, fit$HR, ylim=c(0,0.35), yaxs="i", type="l",
 fit$pars
 fit$refpts
 
+#test avec discretelogistic
+data(pttuna)
+pars <- log(c(r=0.25,K=2.1e06,Binit=2.2e06,sigma=0.2))
+answer <- fitSPM(pars,pttuna,schaefer=TRUE,maxiter=1000)
+outfit(answer,title="Pella-Tomlinson Data",digits=4)
+plot(answer)
 
+data(schaef); schaef <- as.matrix(schaef)
+param <- log(c(r=0.1,K=2250000,Binit=2250000,sigma=0.5))
+negatL <- negLL(param,simpspm,schaef,logobs=log(schaef[,"cpue"]))
+ans <- plotspmmod(inp=param,indat=schaef,schaefer=TRUE,
+                  addrmse=TRUE,plotprod=FALSE)
 
 
 
