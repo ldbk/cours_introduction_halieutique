@@ -2,13 +2,15 @@
 title: "Modèle de surplus"
 author: "moi"
 date: "2024-02-05"
-output: html_document
-editor_options: 
+output:
+  html_document: default
+  word_document: default
+editor_options:
   chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE,eval=F)
 #library
 library(dplyr)
 library(ggplot2)
@@ -85,7 +87,6 @@ $$
 \Leftrightarrow a=\frac{\sum_{i=1}^{n}x_iy_i-\bar yx_i}{\sum_{i=1}^{n}x_i^2-\bar xx_i} \\
 \Leftrightarrow a=\frac{\sum_{i=1}^{n}x_i(y_i-\bar y)}{\sum_{i=1}^{n}x_i(x_i-\bar x)} \\
 \Leftrightarrow a=\frac{\sum_{i=1}^{n}(x_i-\bar x)(y_i-\bar y)}{\sum_{i=1}^{n}(x_i-\bar x)^2} \\
-
 $$
 
 ```{r ajustintro}
