@@ -20,6 +20,101 @@ library(knitr)
 
 Test du modèle de production de Scheafer sur des données. L'ensemble des exemples est tiré de [ressources](<https://haddonm.github.io/URMQMF/on-modelling.html>), qui utilise le package *MQMF*.
 
+## Ajustement ?
+
+Une introduction avec la régression linéaire (en théorie c'est un rappel pratique).
+
+Soit deux variables  ${y_i,x_i}_{i=1,...,n}$, où $X$ est la variable explicative et $Y$ la variable à expliquer. On cherche à ajuste le modèle de régression linéaire suivant
+
+$$
+y_i=ax_i+b+\epsilon_i
+$$
+
+avec $\epsilon$ le terme d'erreur, $a$ la pente de la droite de régression et $b$ l'ordonnée à l'origine. 
+L'ajustement se fait par la méthode des moindres carrés ordinaire, à savoir $a$ et $b$ doivent minimiser la somme des carrés des termes d'erreur. On supposera les hypothèses sous-tendant l'utilisation de ce type de modèle respectées (non colinéarité des variables explicatives - pas utile avec deux variables, indépendances des erreurs - les termes d'erreur ne sont pas corrélés entre eux, exogénéité - pas de corrélation entre variable explicative et terme d'erreur, homoscédasticité - variance constante des termes d'erreur, normalité des termes d'erreur - $\epsilon$ suit une loi normale).
+L'estimation des moindres carrés ordinaires est la soluation du programme de minimisation de la somme des carrés des écarts entre les valeurs prédites et les valeurs observées par rapport aux deux paramètres $a$ et $b$. On minimise donc :
+$$
+S=Argmin_{a,b}\sum_{i=1}^{n}\epsilon_i^2=Argmin_{a,b}\sum_{i=1}^{n}(y_i-ax_i-b)^2
+$$
+
+La fonction $S$ est une fonction différentiable de deux variables réelles. Le minimum est calculé à partir de la résolution du système
+
+$$
+\begin{cases}
+\frac{\partial S}{\partial a}(a,b)=0\\
+\frac{\partial S}{\partial b}(a,b)=0
+\end{cases}
+$$
+En utilisant les règles de dérivation d'une fonction, à savoir dans ce cas précis si $f=u^n$ alors $f'=nu'u^{n-1}$\foonote{mais siiii : $(g \circ f)'=(g'\circ f) \times f'$, cf cours de Terminale ou L3, non ?}
+$$
+\begin{cases}
+\frac{\partial S}{\partial a}(a,b)=-2\sum_{i=1}^{n}(y_i-ax_i-b)=0\\
+\frac{\partial S}{\partial b}(a,b)=-2\sum_{i=1}^{n}x_i(y_i-ax_i-b)=0
+\end{cases}
+$$
+La première équation donne
+$$
+-2\sum_{i=1}^{n}(y_i-ax_i-b)=0\\
+\Leftrightarrow -2\sum_{i=1}^{n}(y_i-ax_i-b)=0\\
+\Leftrightarrow \sum_{i=1}^{n}y_i-a\sum_{i=1}^{n}x_i-nb=0\\
+\Leftrightarrow nb=\sum_{i=1}^{n}y_i-a\sum_{i=1}^{n}x_i\\
+\Leftrightarrow b=\frac{\sum_{i=1}^{n}y_i}{n}-a\frac{\sum_{i=1}^{n}x_i}{n}\\
+\Leftrightarrow b=\bar y-a\bar x\\
+$$
+
+avec $\bar x$ et $\bar y$ les moyennes empriques des $x_i$ et $y_i$.
+
+La deuxième équation : 
+
+$$
+-2\sum_{i=1}^{n}x_i(y_i-ax_i-b)=0\\
+\Leftrightarrow \sum_{i=1}^{n}x_iy_i-ax_i^2-bx_i=0\\
+\Leftrightarrow \sum_{i=1}^{n}x_iy_i-\sum_{i=1}^{n}ax_i^2-\sum_{i=1}^{n}bx_i=0\\
+\Leftrightarrow \sum_{i=1}^{n}x_iy_i-a\sum_{i=1}^{n}x_i^2-b\sum_{i=1}^{n}x_i=0\\
+$$
+
+En remplaçant $b$ par $b=\bar y-a\bar x$
+$$
+\sum_{i=1}^{n}x_iy_i-a\sum_{i=1}^{n}x_i^2-(\bar y-a\bar x)\sum_{i=1}^{n}x_i=0\\
+\Leftrightarrow \sum_{i=1}^{n}x_iy_i-a\sum_{i=1}^{n}x_i^2-\bar y\sum_{i=1}^{n}x_i +a\bar x\sum_{i=1}^{n}x_i=0\\
+\Leftrightarrow -a\sum_{i=1}^{n}x_i^2+a\bar x\sum_{i=1}^{n}x_i=\bar y\sum_{i=1}^{n}x_i-\sum_{i=1}^{n}x_iy_i \\
+\Leftrightarrow a(\bar x\sum_{i=1}^{n}x_i-\sum_{i=1}^{n}x_i^2)=\bar y\sum_{i=1}^{n}x_i-\sum_{i=1}^{n}x_iy_i \\
+\Leftrightarrow a(\sum_{i=1}^{n}\bar xx_i-\sum_{i=1}^{n}x_i^2)=\sum_{i=1}^{n}\bar yx_i-\sum_{i=1}^{n}x_iy_i \\
+\Leftrightarrow a=\frac{\sum_{i=1}^{n}\bar yx_i-\sum_{i=1}^{n}x_iy_i}{\sum_{i=1}^{n}\bar xx_i-\sum_{i=1}^{n}x_i^2} \\
+\Leftrightarrow a=\frac{\sum_{i=1}^{n}\bar yx_i-x_iy_i}{\sum_{i=1}^{n}\bar xx_i-x_i^2} \\
+\Leftrightarrow a=\frac{\sum_{i=1}^{n}x_iy_i-\bar yx_i}{\sum_{i=1}^{n}x_i^2-\bar xx_i} \\
+\Leftrightarrow a=\frac{\sum_{i=1}^{n}x_i(y_i-\bar y)}{\sum_{i=1}^{n}x_i(x_i-\bar x)} \\
+\Leftrightarrow a=\frac{\sum_{i=1}^{n}(x_i-\bar x)(y_i-\bar y)}{\sum_{i=1}^{n}(x_i-\bar x)^2} \\
+
+$$
+
+```{r ajustintro}
+#create data frame
+df <- data.frame(x=c(1, 3, 4, 7.5),y=c(1, 5, 7, 8))
+plot(df)
+#calcul manuel
+a1<-(df$x-mean(df$x))
+a2<-(df$y-mean(df$y))
+a3<-sum((df$x-mean(df$x))^2)
+a<-sum(a1*a2)/a3
+
+a1<-df$x*(df$y-mean(df$y))
+a2<-df$x*(df$x-mean(df$x))
+a3<-sum((df$x-mean(df$x))^2)
+a<-sum(a1)/sum(a2)
+
+
+  
+#define function to minimize residual sum of squares
+min_residuals <- function(data, par) {
+                   with(data, sum((par[1] + par[2] * x - y)^2))
+}
+
+#find coefficients of linear regression model
+optim(par=c(0, 1), fn=min_residuals, data=df)
+```
+## Ajustement du modèle de Scheafer
+
 ```{r ajust}
 #ajustement
 
