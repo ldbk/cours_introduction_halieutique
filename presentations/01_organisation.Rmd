@@ -1,7 +1,7 @@
 ---
 title: "Introduction à l'halieutique"
 subtitle: Organisation et contexte
-date: "2024-02-04"
+date: "2025"
 output:
   slidy_presentation: default
 bibliography: /Users/moi/Zotero/exportdb/My Library.bib
@@ -17,8 +17,8 @@ knitr::opts_chunk$set(echo = FALSE)
 
 ## Information générale
 
-Ce document présente une introduction à la gestion de pêche et aux outils numériques associés. 
-Il vient en support d’un cours destiné aux étudiants en Master 2 Sciences de la Mer Pro de l'université de Caen.
+Ce document présente une introduction à la gestion des pêches et aux outils numériques associés. 
+Il vient en support d’un cours destiné aux étudiants en Master 2 Sciences de la Mer de l'université de Caen.
 Ce cours est accompagné d'un ensemble de travaux pratiques permettant d’appréhender la manipulation de l'information relative à la pêche et son analyse, en utilisant essentiellement le logiciel R [@r2020].
 Ce document est sous license libre, et plus précisement [MIT](https://fr.wikipedia.org/wiki/Licence_MIT).
 Les chaînes de caractères [bleues](https://fr.wikipedia.org/wiki/Bleu) sont cliquables et contiennent des liens hypertextes renvoyant vers des ressources extérieures.
@@ -35,11 +35,11 @@ La navigation au sein de ce document html peut s'effectuer à l'aide des touches
 ## Organisation
 
 - 12 heures : 
-  - lundi 5 février 2024 (9h-12h et  14h-17h), 
-  - mardi 6 février 2024 (9h-12h),
-  - mercredi 7 février 2024 (9h-12h)
+  - lundi 10 février 2025 (14h-17h), 
+  - mardi 11 février 2025 (9h-12h, 14h-17h),
+  - mercredi 12 février 2025 (9h-12h)
 - en présentiel
-- alternance de présentations et d'exercices pratiques avec des pauses régulières
+- alternance de présentations et d'exercices pratiques
 - matériels : un ordinateur avec [RStudio Desktop](https://rstudio.com/products/rstudio/download/) installé, et une connection internet  
 
 ## Ressources 
@@ -54,7 +54,7 @@ Les ressources se trouvent ici : **<https://github.com/ldbk/cours_introduction_h
 
 Laurent Dubroca (prénom.nom@ifremer.fr), Ifremer, laboratoire Ressources Halieutiques de Port-en-Bessin. 
 
-### [Ifremer](https://wwz.ifremer.fr/) ?
+### [L'Ifremer](https://wwz.ifremer.fr/) ?
 
 <div class='left' style='float:left;width:70%' text-align='justify'>
 "L'Institut français de recherche pour l’exploitation de la mer (Ifremer) contribue, par ses travaux et expertises,
@@ -63,7 +63,7 @@ développement durable des activités maritimes. L’Ifremer est source de conna
 données de surveillance et d’expertise pour le monde de la mer, à la fois en matière de politique publique et
 d’activité socio-économique. Il est la seule structure de ce type en Europe.
 Fondé en 1984, l'Ifremer est un établissement public à caractère industriel et commercial (EPIC), placé sous
-la tutelle conjointe du ministère de l'Enseignement supérieur, de la Recherche, du ministère de la Transition écologique et de la Cohésion des territoires et du ministère de l'Agriculture et de la souveraineté alimentaire."
+la tutelle conjointe du ministère de l'Education nationale, de l'Enseignement supérieur et de la Recherche, du ministère de la Transition écologique, de la Biodiversité, de la Forêt, de la Mer et de la Pêche, et du Ministère de l'Agriculture et de la Souveraineté alimentaire."
 
 **Composantes** : 5 centres et 24 d'implantations en métropole et dans le monde <https://www.ifremer.fr/fr/l-ifremer-en-france-et-dans-le-monde>.
 
@@ -88,5 +88,71 @@ knitr::include_graphics("../img/ifrmap.png")
 knitr::include_graphics("../img/thalassa.jpg")
 ```
 </div>
+
+## Le laboratoire Ressources Halieutiques de l'Ifremer à Port-en-Bessin
+
+Positionnement géographique
+
+```{r, echo=FALSE, out.width="100%", fig.cap=""}
+knitr::include_graphics("../img/mapifr2.png")
+```
+
+## Le laboratoire Ressources Halieutiques de l'Ifremer à Port-en-Bessin
+
+Positionnement organisationnel
+
+
+```{r, echo=FALSE, out.width="100%", fig.cap=""}
+knitr::include_graphics("../img/ifrorga.png")
+```
+
+## Le laboratoire Ressources Halieutiques de l'Ifremer à Port-en-Bessin
+
+Positionnement thématique
+
+```{r, echo=FALSE, out.width="100%", fig.cap=""}
+knitr::include_graphics("../img/ifrtheme.png")
+```
+
+## Le laboratoire Ressources Halieutiques de l'Ifremer à Port-en-Bessin
+
+Objectifs
+
+```{r, echo=FALSE, out.width="100%", fig.cap=""}
+knitr::include_graphics("../img/ifrobj.png")
+```
+
+## Le laboratoire Ressources Halieutiques de l'Ifremer à Port-en-Bessin
+
+Objectif 1
+
+```{r, echo=FALSE, out.width="100%", fig.cap=""}
+knitr::include_graphics("../img/ifrobj1bis.png")
+```
+
+```{r, echo=FALSE, out.width="100%", fig.cap=""}
+knitr::include_graphics("../img/ifrobj1ter.png")
+```
+
+```{r, echo=FALSE, out.width="100%", fig.cap=""}
+knitr::include_graphics("../img/ifrobj1.png")
+```
+
+
+## Le laboratoire Ressources Halieutiques de l'Ifremer à Port-en-Bessin
+
+Objectif 2
+
+```{r, echo=FALSE, out.width="100%", fig.cap=""}
+knitr::include_graphics("../img/ifrobj2.png")
+```
+
+## Le laboratoire Ressources Halieutiques de l'Ifremer à Port-en-Bessin
+
+Objectif 3
+
+```{r, echo=FALSE, out.width="100%", fig.cap=""}
+knitr::include_graphics("../img/ifrobj3.png")
+```
 
 ## Bibliographie
