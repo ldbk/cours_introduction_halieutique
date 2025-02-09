@@ -99,10 +99,6 @@ a2<-(df$y-mean(df$y))
 a3<-sum((df$x-mean(df$x))^2)
 a<-sum(a1*a2)/a3
 
-a1<-df$x*(df$y-mean(df$y))
-a2<-df$x*(df$x-mean(df$x))
-a3<-sum((df$x-mean(df$x))^2)
-a<-sum(a1)/sum(a2)
 
 
   
