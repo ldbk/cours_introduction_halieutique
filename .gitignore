@@ -34,5 +34,5 @@ po/*~
 # RStudio Connect folder
 rsconnect/
 #truc moi
-.DS_Store
+*.DS_Store
 *.swp
