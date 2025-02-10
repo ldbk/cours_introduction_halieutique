@@ -1,7 +1,7 @@
 ---
 title: "Introduction à l'halieutique"
-subtitle: "Statistiques des pêches"
-date: "2024-02-04"
+subtitle: Modélisation
+date: "2025"
 output:
   slidy_presentation: default
 bibliography: /Users/moi/Zotero/exportdb/My Library.bib
@@ -15,69 +15,9 @@ urlcolor: blue
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
-## Plan
-
-04/02/2024 : organisation et notions générales sur les pêches
-05/02/2024 : statistiques des pêches, gestion des pêches
-
-## Statistiques des pêches
-
-Pour renseigner l'activité de pêcheries il faut :
-
-- les captures : débarquements, rejets, captures accidentelles 
-- l'effort de pêche
-- les paramètres liées à la capturabilité des engins de pêche
-- les paramètres biologiques liées aux captures : structure en taille, en âge, maturité sexuelle
-- des informations relatives à la biomasse indépendante des activités de pêche
-- tout autre paramètre utile à la compréhension de la dynamique de la population exploitée : migration (marquage), caractéristique génétique ou fonctionnelle (délimitation des stocks)
-- on distingue les données dépendantes des pêcheries (captures, etc.) des données indépendantes (e.g. les campagnes scientifiques) 
 
 
-## Statistiques des pêches en France
-
-La collecte des données est coordonnée par l'Ifremer.
-
-[source](<sih.ifremer.fr>)
-
-```{r, echo=FALSE, out.width="100%", fig.cap=""}
-knitr::include_graphics("../img/sacrois.png")
-```
-
-## Statistiques des pêches
-
-Echantillonnages OBSMER [source](<sih.ifremer.fr>)
-
-```{r, echo=FALSE, out.width="100%", fig.cap=""}
-knitr::include_graphics("../img/obsmer.png")
-```
-
-```{r, echo=FALSE, out.width="100%", fig.cap=""}
-knitr::include_graphics("../img/obsmer2.png")
-```
-
-## Campagnes halieutiques
-
-```{r, echo=FALSE, out.width="100%", fig.cap=""}
-knitr::include_graphics("../img/ifr_camp1.png")
-```
-
-
-```{r, echo=FALSE, out.width="100%", fig.cap=""}
-knitr::include_graphics("../img/ifr_camp2.png")
-```
-
-Les données récoltées sont disponibles en ligne : 
-
-- <https://sih-indices-campagnes.ifremer.fr/>
-- <https://datras.ices.dk/Data_products/Download/Download_Data_public.aspx>
-
-
-
-## Définitions halieutiques (suite)
-
-Source : @gascuel2008
-  
-#### Recrutement et cohorte
+## Définitions (suite) : recrutement et cohorte
 
 - recrutement : processus par lesquel les individus acquièrent une propriété qui les rend exploitable par la pêche (déplacement vers les zones de pêche, taille, comportement, etc.)
 - âge et taille de recrutement : séparation entre une phase jeune (larves, post-larves et premiers stades juvéniles) à mortalité naturelle élevée, plasticité phénotypique, sensibilité à l'environnement vs phase plus âgée (juvéniles et adultes) moins sensible à la variabilité environnementale
@@ -85,7 +25,10 @@ Source : @gascuel2008
 
 - cohorte : ensemble des individus d'un stock donné, né à une période donnée. En général une cohorte par an (si une seule saison de reproduction). Définie par l'année de naissance ou année de recrutement
 
-### Phase exploitable et phase exploitée
+Source : @gascuel2008
+
+
+## Définitions : phase exploitable et phase exploitée
 
 - accessibilité des cohortes à l'exploitation 
 - résultante d'une mesure de gestion (maillage, période autorisée, etc.)
@@ -94,7 +37,10 @@ Source : @gascuel2008
 knitr::include_graphics("../img/cohorte_exploit.png")
 ```
 
-#### Abondance, production et productivité biologique d'un stock
+Source : @gascuel2008
+
+
+## Abondance, production et productivité biologique d'un stock
 
 - abondance : mesure de la quantité d'individus présents dans le stock, en effectif (nombre d'individus, N) ou en biomasses (en tonnes, B)
 - production biologique d'un stock (P) : quantité nette d'individus (en nombre ou en biomasse) produite pendant un intervalle de temps.
@@ -122,37 +68,9 @@ En effectif : $P=\frac{1}{N}\frac{dN}{dt}$
 En biomasse : $P=\frac{1}{B}\frac{dB}{dt}$
 </div>
 
-### Caractérisation de l'exploitation
 
-#### Flottille et métier
+## Modélisation : généralités
 
-Fichier FPC, engin et modalités des captures
-
-
-#### Effort de pêche
-
-- effort de pêche : mesure de l'activité de pêche 
-- utilisé dans les modèles de dynamiques de population et base des mesures de gestion des stocks
-- exemple : nombre de navires, nombre de jours de pêches
-- élément essentiel de la variabilité de l'exploitation
-
-  - effort de pêche nominal : paramètre de gestion qui mesure l'accumulation des moyens de capture pour exploiter un stock par unité de temps
-  - effort de pêche effectif : paramètre d'évaluation qui mesure la pression réelle exercée sur un stock par unité de temps
-
-- diagramme d'exploitation et régime d'exploitation
-
-
-### Capturabilité et captures
-
-- stock
-- bon état des stocks : 
-- exploitation durable d'un stock
-
-## Modélisation
-
-[ressources](<https://haddonm.github.io/URMQMF/on-modelling.html>)
-
-### Généralités
 
 - tout modèle est une abstraction ou une simulation de ce qui est connu sur le processus ou le phénomène simulé
 - un modèle n'est pas une copie conforme de ces connaissances : la modélisation est une affaire de choix sur les processus les plus structurants pour le processus
@@ -163,10 +81,43 @@ Fichier FPC, engin et modalités des captures
 - paramètres
 - variables
 
-## 
+[ressources](<https://haddonm.github.io/URMQMF/on-modelling.html>)
+
+## Modèlisation en halieutique
+
+Différentes classes de modèle existent. Nous utiliserons ici un modèle de la dynamique de la biomasse totale d'un stock.
+
+Développement du Modèle par Schaefer (1954-1957) :
+
+- Milner B. Schaefer, biologiste/halieute américain, propose un modèle basé sur l'idée d'une production excédentaire d’une population exploitée.
+- Il adapte l’équation logistique de croissance de population développée par Verhulst (1838) pour représenter la biomasse de poissons en fonction de l'effort de pêche.
+    
+```{r, echo=FALSE, out.width="40%", fig.cap=""}
+knitr::include_graphics("../img/logistic1.png")
+```
+
+- En 1954, il publie un premier article démontrant comment l'effort de pêche influence la capture et la biomasse d'une population : "Schaefer, M.B. (1954) Some aspects of the dynamics of populations, important for the management of the commercial marine fisheries. Inter-American Tropical Tuna Commission, 1, 7-56."
+- En 1957, il affine son modèle en reliant la capture au rendement économique, ce qui aboutit au concept de rendement maximal durable (RMD ou MSY, Maximum Sustainable Yield).
+
+## Modèle par Schaefer : adoption et application du modèle (1960-1980), limites et évolutions
+
+- Dans les années 1960 et 1970, le modèle de Schaefer devient un outil clé pour la gestion des pêcheries à l'échelle mondiale.
+- Les organisations internationales (e.g. FAO) l’adoptent pour recommander des niveaux optimaux d’effort de pêche.
+- Cependant, le modèle repose sur plusieurs hypothèses simplificatrices qui ne prennent pas en compte la variabilité environnementale, les interactions trophiques ou les changements comportementaux des populations exploitées.
+
+Limites et Évolutions (Années 1980-Aujourd’hui)
+
+- 1980-1990 :  des critiques émergent sur le concept du RMD, car il ne prend pas en compte l’incertitude et les fluctuations des écosystèmes marins.
+- nouveaux modèles bio-économiques : approche de Fox (1970) (modèle exponentiel) ou de Pella et Tomlinson (1969) (modèle généralisé de production), sont développés pour améliorer la gestion des stocks.
+        
+Aujourd’hui, des approches plus complexes sont utilisées, comme les modèles multi-espèces et les approches écosystémiques, mais le modèle de Schaefer reste un élément fondamental de la modélisation en halieutique.
+
+Le modèle de Schaefer a marqué un tournant dans la gestion des pêcheries en introduisant une approche quantifiée et prédictive de l’exploitation des stocks halieutiques. Bien qu’il soit aujourd’hui considéré comme simpliste, il a posé les bases des modèles de gestion moderne et continue d’être utilisé comme référence pour l'évaluation des ressources marines.
 
 
-### Modèle de Scheafer
+
+
+## Modèle de Scheafer
 
 Modèle de la dynamique de la biomasse d'un stock [@scheafer1957]
 Modèle logistique discret,modèles globaux ou modèles de production ("surplus production models" en anglais).
@@ -192,7 +143,7 @@ $B_{t+1}=10+0.2*10*(1-10/100)-1=10.8
 
 Code !
 
-### Tester la dynamique du modèle
+## Tester la dynamique du modèle
 
 
 

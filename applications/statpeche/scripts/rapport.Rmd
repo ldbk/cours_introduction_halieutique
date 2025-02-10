@@ -1,0 +1,221 @@
+---
+title: "Analyse des données de pêche française de 2000 à 2022"
+output:
+  html_document: 
+    fig_caption: yes
+  word_document: 
+    fig_caption: yes
+date: "2025"
+author: moi
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#packages
+library(dplyr)
+library(ggplot2)
+library(data.table)
+library(sf)
+```
+
+## Consignes
+
+- un rapport court en Rmarkdown
+- une introduction qui contextualise l'analyse (voir <https://sih.ifremer.fr/Publications/Fiches-regionales> et <https://sih.ifremer.fr/Debarquements-effort-de-peche/Sacrois>)
+- une description des jeux de données utilisées avec leurs caractéristiques principales (période temporelle, zone géographique, variables et descriptions des variables)
+- une analyse descriptive basée sur efforts.csv ou/et landings.csv : table et graphique, avec commentaire des résultats
+- une analyse statistique (test de tendance, analyse en composante principale, classification, anova...)
+- un commentaire des résultats de l'analyse
+- à envoyer à laurent.dubroca@ifremer.fr (le fichier Rmarkdown et le fichier html/docx/pdf, au choix)
+- attention à bien spécifier le chemin pour le répertoire de travail (par défaut je prends le répertoire de travail du script courant) et établir correctement les chemins vers les fichiers à lire (utilisez `getwd()`!)
+- rappelle de syntaxe : lien http <http://rmarkdown.rstudio.com>, **gras**, *italique*, `du code`, une reference en bas de page^[mettre la référence ici].
+
+
+
+```{r testplot,echo=T,include=T,fig.cap="légende de la figure"}
+#rappel pour insérer du code dans un document markdown
+dat<-rnorm(100)
+plot(dat)
+```
+
+
+```{r testjolietable,echo=T,include=T,tab.cap="légende de la table"}
+#rappel pour insérer du code dans un document markdown
+dat<-rnorm(100)
+knitr::kable(data.frame(moyenne=mean(dat),variance=var(dat)))
+```
+
+## Introduction
+
+Contextualiser le travail ici
+
+## Matériels et méthodes
+
+### Données
+
+Décrire brièvement les données utilisées : source, forme, information
+
+Les données sont stockées dans différents fichiers. Décrire la structure ici.
+
+```{r dataread,eval=F,include=F}
+#effort
+efforts<-fread(cmd = 'unzip -p ../data/efforts.csv.zip')
+#landings
+landings1<-fread(cmd = 'unzip -p ../data/landings_2011_2023.csv.zip')
+landings2<-fread(cmd = 'unzip -p ../data/landings_2000_2010.csv.zip')
+landings<-rbind(landings1,landings2)
+rm(landings1,landings2)
+
+refgear<-read.csv2("../data/REFERENTIEL_ENGINS.txt",fileEncoding="ISO-8859-1",sep="\t")
+refspp<-read.csv2("../data/REFERENTIEL_ESPECES.txt",fileEncoding="ISO-8859-1",sep="\t")
+refmet<-read.csv2("../data/REFERENTIEL_METIERS_DCF_6.txt",fileEncoding="ISO-8859-1",sep="\t")
+refport<-read.csv2("../data/REFERENTIEL_PORTS.txt",fileEncoding="ISO-8859-1",sep="\t")
+allgeo<-readRDS("../data/allgeo.rds")
+```
+
+
+
+### Prétraitements
+
+Expliciter ici les prétraitements effectués (filtre, agrégation, etc.)
+
+```{r preprocc,eval=F}
+#jointure pour ajouter le nom de l'espèce en français aux débarquements
+lan<-left_join(landings,refspp,by=c("taxon"="ESP_COD_FAO"))
+
+#exemple filtre sur le rouget barbet
+lanMUR<-lan%>%filter(taxon=="MUR")
+#exemple filtre sur 3 espèces
+lan3spp<-lan%>%filter(taxon%in%c("MUR","BSS","HOM"))
+#table pour avoir les espèces
+table(lan3spp$taxon)
+#filtre sur des ports
+lanPORT<-lan%>%filter(port%in%c("LCN","XCN"))
+
+#selectionner les seiches
+listeseiche<-refspp%>%filter(grepl("Seiche",ESP_LIB_FAO_FRANCAIS))
+lanseiche<-lan%>%filter(taxon%in%listeseiche$ESP_COD_FAO)
+
+table(lanseiche$taxon)
+
+#selectionner les engins
+listedrague<-refmet%>%filter(grepl("à perche",METIER_DCF_6_LIB))
+landrague<-lan%>%filter(metier6%in%listedrague$METIER_DCF_6_COD)
+
+table(landrague$metier6)
+
+
+#combine par année et somme des débarquements
+lanmuryear<-lanMUR%>%
+  group_by(year)%>%
+  summarise(w=sum(landWt,na.rm=T))
+
+#plot
+ggplot(lanmuryear,aes(x=year,y=w))+geom_point()+geom_smooth()
+
+#un exemple de barplot joli
+listeraie<-refspp%>%filter(grepl("Raie",ESP_LIB_FAO_FRANCAIS))
+lanraie<-landings%>%filter(taxon%in%listeraie$ESP_COD_FAO)%>%
+  filter(port%in%c("LCN","XCH"))
+#combine et résume
+lanraie<-lanraie%>%
+  group_by(year,taxon,port)%>%
+  summarise(w=sum(landWt,na.rm=T))
+       
+ggplot(lanraie,aes(x=year,y=w,fill=taxon))+geom_bar(stat="identity")+facet_grid(~port)    
+  
+#trop de raie : selection des les espèces majoritaire
+lanraieall<-
+  lanraie<-landings%>%filter(taxon%in%listeraie$ESP_COD_FAO)%>%
+  filter(port%in%c("LCN","XCH"))%>%
+  group_by(taxon,port)%>%
+  summarise(w=sum(landWt,na.rm=T))%>%
+  arrange(port,desc(w))%>%
+  group_by(port)%>%
+  mutate(totport=sum(w))%>%
+  mutate(raieperc=round(w/totport*100,2))
+
+#une carte pour voir où on est
+#selectionne les secteurs d'intérêt ici 7d 
+divices<-allgeo%>%filter(type=="ices_division",icesdiv%in%c("27.7.d"))
+rectices<-allgeo%>%filter(type=="ices_rectangle",icesdiv%in%c("27.7.d"))
+ggplot()+
+  geom_sf(data=rectices,aes(geometry=geometry),fill=NA)+
+  geom_sf_label(data=rectices,aes(geometry=geometry,label=offname),fill=NA,lwd=2)+ 
+  geom_sf(data=divices,aes(geometry=geometry),color="blue",fill=NA,lwd=2)+
+  geom_sf_label(data=divices,aes(geometry=geometry,label=offname),color="blue",fill=NA,lwd=2)+
+  borders("world",fill="light grey",colour="light grey",alpha=1)+
+  coord_sf(c(-2.25,3),c(49,51.5))+
+  theme_bw()
+
+#carto des captures par rectangle
+lanmurrect<-lanMUR%>%
+  group_by(year,rect)%>%
+  summarise(w=sum(landWt,na.rm=T),.groups="drop")%>%
+  left_join(allgeo,by=c("rect"="offname"))
+
+ggplot()+
+  geom_sf(data=lanmurrect,aes(geometry=geometry,fill=w))+
+  scale_fill_distiller(palette='Spectral',name="Landings (kg)")+
+  facet_wrap(~year)+
+  borders("world",fill="light grey",colour="light grey",alpha=1)+
+  coord_sf(c(-2.25,3),c(49,51.5))+
+  theme_bw()
+  
+#trans en log si besoin
+ggplot()+
+  geom_sf(data=lanmurrect%>%filter(w>0),aes(geometry=geometry,fill=w))+
+  scale_fill_distiller(palette='Spectral',name="Landings (kg)",trans="log10")+
+  facet_wrap(~year)+
+  borders("world",fill="light grey",colour="light grey",alpha=1)+
+  coord_sf(c(-2.25,3),c(49,51.5))+
+  theme_bw()
+
+
+#test de tendance
+
+cor.test(lanmuryear$year,lanmuryear$w,method="spearman")
+
+
+#et si on faisait une analyse en composante principale des captures par ports espèces et année? Oh oui alors
+library(tidyr)
+lanwide<-landings%>%group_by(year,port,taxon)%>%
+  summarise(landWt=sum(landWt,na.rm=T))%>%
+  pivot_wider(values_from=landWt,names_from=port,values_fill=0)
+library(FactoMineR)
+rezpca<-PCA(lanwide[,3:224])
+
+hrez<-hclust(dist(lanwide[,3:224]))
+plot(hrez)
+
+```
+
+
+
+
+
+
+
+### Sous-partie de l'intro
+
+BLABALBALBALBA
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
