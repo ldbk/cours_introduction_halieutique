@@ -5,6 +5,8 @@ output:
   word_document: default
 date: "2024-02-05"
 author: moi
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
@@ -12,6 +14,8 @@ knitr::opts_chunk$set(echo = TRUE)
 #packages
 library(dplyr)
 library(ggplot2)
+library(data.table)
+library(sf)
 ```
 
 ## Consignes
@@ -22,10 +26,10 @@ library(ggplot2)
 - une analyse descriptive basée sur efforts.csv ou/et landings.csv : table et graphique, avec commentaire des résultats
 - une analyse statistique (test de tendance, analyse en composante principale, classification, anova...)
 - un commentaire des résultats de l'analyse
-- à envoyer à laurent.dubroca@ifremer.fr avant 9h demain matin (le fichier Rmarkdown et le fichier html)
+- à envoyer à laurent.dubroca@ifremer.fr (le fichier Rmarkdown et le fichier html/docx/pdf, au choix)
 
 
-```{r,echo=T}
+```{r,echo=T,include=T}
 dat<-rnorm(100)
 plot(dat)
 ```
@@ -37,17 +41,25 @@ plot(dat)
 Les données sont stockées dans différents fichiers. Décrire la structure ici.
 
 ```{r include=FALSE}
-landings<-read.csv("./data/landings.csv")
-efforts<-read.csv("./data/efforts.csv")
 
-refgear<-read.csv2("./data/REFERENTIEL_ENGINS.txt",fileEncoding="ISO-8859-1",sep="\t")
-refspp<-read.csv2("./data/REFERENTIEL_ESPECES.txt",fileEncoding="ISO-8859-1",sep="\t")
-refmet<-read.csv2("./data/REFERENTIEL_METIERS_DCF_6.txt",fileEncoding="ISO-8859-1",sep="\t")
-refport<-read.csv2("./data/REFERENTIEL_PORTS.txt",fileEncoding="ISO-8859-1",sep="\t")
+efforts<-fread(cmd = 'unzip -p ./applications/statpeche/data/efforts.csv.zip efforts.csv')
+
+landings1<-fread(cmd = 'unzip -p ./applications/statpeche/data/landings_2011_2023.csv.zip landings_2011_2023.csv')
+landings2<-fread(cmd = 'unzip -p ./applications/statpeche/data/landings_2000_2010.csv.zip landings_2000_2010.csv')
+landings<-rbind(landings1,landings2)
 
 
-library(dplyr)
-library(ggplot2)
+refgear<-read.csv2("./applications/statpeche/data/REFERENTIEL_ENGINS.txt",fileEncoding="ISO-8859-1",sep="\t")
+refspp<-read.csv2("./applications/statpeche/data/REFERENTIEL_ESPECES.txt",fileEncoding="ISO-8859-1",sep="\t")
+refmet<-read.csv2("./applications/statpeche/data/REFERENTIEL_METIERS_DCF_6.txt",fileEncoding="ISO-8859-1",sep="\t")
+refport<-read.csv2("./applications/statpeche/data/REFERENTIEL_PORTS.txt",fileEncoding="ISO-8859-1",sep="\t")
+allgeo<-readRDS("./applications/statpeche/data/allgeo.rds")
+
+
+
+
+
+
 
 #jointure
 lan<-left_join(landings,refspp,by=c("taxon"="ESP_COD_FAO"))
@@ -103,6 +115,24 @@ lanraieall<-
   mutate(totport=sum(w))%>%
   mutate(raieperc=round(w/totport*100,2))
 
+#une carte pour voir où on est
+#selectionne les secteurs d'intérêt ici 7d et 7e
+divices<-allgeo%>%filter(type=="ices_division",icesdiv%in%c("27.7.d","27.7.e"))
+rectices<-allgeo%>%filter(type=="ices_rectangle",icesdiv%in%c("27.7.d","27.7.e"))
+ggplot()+
+  geom_sf(data=rectices,aes(geometry=geometry),fill=NA)+
+  geom_sf_label(data=rectices,aes(geometry=geometry,label=offname),color="blue",fill=NA,lwd=2)+ 
+  geom_sf(data=divices,aes(geometry=geometry),color="blue",fill=NA,lwd=2)+
+  geom_sf_label(data=divices,aes(geometry=geometry,label=offname),color="blue",fill=NA,lwd=2)+
+  borders("world",fill="light grey",colour="light grey",alpha=1)+
+  coord_sf(c(-8,3),c(48,52))+
+  theme_bw()
+
+#carto des captures par rectangle
+lanmurrect<-lanmur%>%
+  group_by(year,rect())%>%
+  summarise(w=sum(landWt,na.rm=T))%>%
+  left_join(allgeo,by=c("rect"="offname"))
 
 
 
