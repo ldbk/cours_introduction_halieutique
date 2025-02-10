@@ -1,6 +1,7 @@
 ---
 title: "Examen (45 minutes)"
-subtitle: "Exploitation et gestion en halieutique"
+subtitle: Exploitation et gestion en halieutique
+output: pdf_document
 ---
 
 # Contexte 

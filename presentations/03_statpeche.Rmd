@@ -1,0 +1,79 @@
+---
+title: "Introduction à l'halieutique"
+subtitle: "Statistiques des pêches"
+date: "2025"
+output:
+  slidy_presentation: default
+bibliography: /Users/moi/Zotero/exportdb/My Library.bib
+csl: apa.csl
+link-citations: yes
+linkcolor: blue
+urlcolor: blue
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
+## Statistiques des pêches
+
+Pour renseigner l'activité de pêcheries il faut :
+
+- les captures : débarquements, rejets, captures accidentelles...
+- l'effort de pêche : temps passé en mer, nombre de marées, etc...
+- les paramètres liées à la capturabilité des engins de pêche
+- les paramètres biologiques liées aux captures : structure en taille, en âge, maturité sexuelle
+- des informations relatives à la biomasse indépendante des activités de pêche
+- tout autre paramètre utile à la compréhension de la dynamique de la population exploitée : migration (marquage), caractéristique génétique ou fonctionnelle (délimitation des stocks)
+- on distingue les données dépendantes des pêcheries (captures, etc.) des données indépendantes (e.g. les campagnes scientifiques) 
+
+
+## Statistiques des pêches en France
+
+La collecte des données est coordonnée par l'Ifremer.
+
+[source](<sih.ifremer.fr>)
+
+```{r, echo=FALSE, out.width="100%", fig.cap=""}
+knitr::include_graphics("../img/sacrois.png")
+```
+
+## Statistiques des pêches
+
+Programme OBSMER [source](<sih.ifremer.fr>)
+
+```{r, echo=FALSE, out.width="80%", fig.cap=""}
+knitr::include_graphics("../img/obsmer.png")
+```
+
+## Statistiques des pêches
+
+Programme OBSMER [source](<sih.ifremer.fr>)
+
+```{r, echo=FALSE, out.width="80%", fig.cap=""}
+knitr::include_graphics("../img/obsmer2.png")
+```
+
+## Campagnes halieutiques
+
+```{r, echo=FALSE, out.width="80%", fig.cap=""}
+knitr::include_graphics("../img/Reseau-de-campagnes.png")
+```
+
+## Campagnes halieutiques
+
+```{r, echo=FALSE, out.width="80%", fig.cap=""}
+knitr::include_graphics("../img/ifr_camp2.png")
+```
+
+Les données récoltées sont disponibles en ligne : 
+
+- <https://sih-indices-campagnes.ifremer.fr/>
+- <https://datras.ices.dk/Data_products/Download/Download_Data_public.aspx>
+
+
+
+
+
+## Bibliographie
