@@ -107,6 +107,24 @@ print(rez)
 
 ```
 
+
+```{r maplan,eval=T}
+#carto des captures par rectangle
+lanmurrect<-lanMUR%>%
+  group_by(year,rect)%>%
+  summarise(w=sum(landWt,na.rm=T),.groups="drop")%>%
+  left_join(allgeo,by=c("rect"="offname"))
+
+ggplot()+
+  geom_sf(data=lanmurrect,aes(geometry=geometry,fill=w))+
+  scale_fill_distiller(palette='Spectral',name="Landings (kg)")+
+  facet_wrap(~year)+
+  borders("world",fill="light grey",colour="light grey",alpha=1)+
+  coord_sf(c(-2.25,3),c(49,51.5))+
+  theme_bw()
+```
+
+
 # Résultats
 
 Commente évolution temporelle et le résultat du test.
