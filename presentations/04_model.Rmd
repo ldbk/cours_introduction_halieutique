@@ -139,9 +139,21 @@ avec
 - $C_t$ les captures à l'instant $t$
 
 Exemple : si $B_t$=10t, $r$=0.2, $K$=100t et $C_t$=1, $B_t+1$=10.8 
-$B_{t+1}=10+0.2*10*(1-10/100)-1=10.8
+$B_{t+1}$=10+0.2*10*(1-10/100)-1=10.8
 
 Code !
+
+## Dynamique générale
+
+```{r, echo=FALSE, out.width="80%", fig.cap=""}
+knitr::include_graphics("../img/mod1.png")
+```
+
+## Points de référence
+
+```{r, echo=FALSE, out.width="80%", fig.cap=""}
+knitr::include_graphics("../img/mod2.png")
+```
 
 ## Tester la dynamique du modèle
 
