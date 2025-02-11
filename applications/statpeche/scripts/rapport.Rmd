@@ -34,22 +34,10 @@ library(sf)
 
 
 
-```{r testplot,echo=T,include=T,fig.cap="légende de la figure"}
-#rappel pour insérer du code dans un document markdown
-dat<-rnorm(100)
-plot(dat)
-```
-
-
-```{r testjolietable,echo=T,include=T,tab.cap="légende de la table"}
-#rappel pour insérer du code dans un document markdown
-dat<-rnorm(100)
-knitr::kable(data.frame(moyenne=mean(dat),variance=var(dat)))
-```
 
 ## Introduction
 
-Contextualiser le travail ici
+Contextualiser le travail ici. Analyse de données.
 
 ## Matériels et méthodes
 
@@ -59,7 +47,7 @@ Décrire brièvement les données utilisées : source, forme, information
 
 Les données sont stockées dans différents fichiers. Décrire la structure ici.
 
-```{r dataread,eval=F,include=F}
+```{r dataread,eval=T,include=F}
 #effort
 efforts<-fread(cmd = 'unzip -p ../data/efforts.csv.zip')
 #landings
@@ -75,20 +63,57 @@ refport<-read.csv2("../data/REFERENTIEL_PORTS.txt",fileEncoding="ISO-8859-1",sep
 allgeo<-readRDS("../data/allgeo.rds")
 ```
 
+### Zone de l'étude
 
+````{r map}
+#une carte pour voir où on est
+#selectionne les secteurs d'intérêt ici 7d 
+divices<-allgeo%>%filter(type=="ices_division",icesdiv%in%c("27.7.d"))
+rectices<-allgeo%>%filter(type=="ices_rectangle",icesdiv%in%c("27.7.d"))
+ggplot()+
+  geom_sf(data=rectices,aes(geometry=geometry),fill=NA)+
+  geom_sf_label(data=rectices,aes(geometry=geometry,label=offname),fill=NA,lwd=2)+ 
+  geom_sf(data=divices,aes(geometry=geometry),color="blue",fill=NA,lwd=2)+
+  geom_sf_label(data=divices,aes(geometry=geometry,label=offname),color="blue",fill=NA,lwd=2)+
+  borders("world",fill="light grey",colour="light grey",alpha=1)+
+  coord_sf(c(-2.25,3),c(49,51.5))+
+  theme_bw()
+````
 
 ### Prétraitements
 
 Expliciter ici les prétraitements effectués (filtre, agrégation, etc.)
 
-```{r preprocc,eval=F}
+```{r preprocc,eval=T}
+
 #jointure pour ajouter le nom de l'espèce en français aux débarquements
 lan<-left_join(landings,refspp,by=c("taxon"="ESP_COD_FAO"))
-
 #exemple filtre sur le rouget barbet
-lanMUR<-lan%>%filter(taxon=="MUR")
+lanMUR<-lan %>% filter(taxon=="MUR")
+#lan3spp<-lan %>% filter(taxon%in%c("MUR","BSS","HOM"))
+#lanSeiche<-lan%>%filter(grepl("Seiche",ESP_LIB_FAO_FRANCAIS))
+#combine par année et somme des débarquements
+lanmuryear<-lanMUR%>%
+  group_by(year)%>%
+  summarise(w=sum(landWt/1000,na.rm=T))
+
+#plot
+ggplot(lanmuryear,aes(x=year,y=w))+geom_point()+geom_smooth(method="lm")
+
+#analyse
+rez<-cor.test(lanmuryear$year,lanmuryear$w,method="spearman")
+print(rez)
+
+
+```
+
+# Résultats
+
+Commente évolution temporelle et le résultat du test.
+
+```{r truc,eval=F,include=F}
 #exemple filtre sur 3 espèces
-lan3spp<-lan%>%filter(taxon%in%c("MUR","BSS","HOM"))
+lan3spp<-lan %>%   filter(taxon%in%c("MUR","BSS","HOM"))
 #table pour avoir les espèces
 table(lan3spp$taxon)
 #filtre sur des ports
@@ -198,24 +223,3 @@ plot(hrez)
 
 
 
-### Sous-partie de l'intro
-
-BLABALBALBALBA
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
-```
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
