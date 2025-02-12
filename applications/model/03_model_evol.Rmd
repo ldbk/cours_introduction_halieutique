@@ -18,6 +18,7 @@ library(dplyr)
 library(ggplot2)
 library(data.table)
 library(sf)
+library(MQMF)
 ```
 
 ## Consignes
@@ -31,8 +32,31 @@ library(sf)
 - attention à bien spécifier le chemin pour le répertoire de travail (par défaut je prends le répertoire de travail du script courant) et établir correctement les chemins vers les fichiers à lire (utilisez `getwd()`!)
 - rappelle de syntaxe : lien http <http://rmarkdown.rstudio.com>, **gras**, *italique*, `du code`, une reference en bas de page^[mettre la référence ici].
 
+```{r dataread,eval=T,include=F}
+
+#Initial model 'fit' to the initial parameter guess  Fig 7.5  
+data(schaef); schaef <- as.matrix(schaef)  
 
 
+param <- log(c(r=0.1,K=2250000,Binit=2250000,sigma=0.5))  
+ans <- fitSPM(param,fish=schaef,schaefer=TRUE,maxiter=1000)
+outfit(ans)  
+plotspmmod(inp=ans$estimate,indat=schaef,schaefer=TRUE,  
+                 addrmse=TRUE,plotprod=FALSE)  
+ 
+nocatch <- discretelogistic(r=2,34,K=210000,N0=225000,Ct=0,Yrs=30)
+plottime <- function(x,ylab) {
+  yrs <- nrow(x)
+  plot1(x[,"year"],x[,"nt"],ylab=ylab,defpar=FALSE)
+  avB <- round(mean(x[(yrs-20):yrs,"nt"],na.rm=TRUE),3)
+  mtext(avB,side=1,outer=F,line=-1.1,font=7,cex=1.0)
+} # end of
+plottime(nocatch,"Theoritical model")
+
+ 
+
+
+````
 
 ## Introduction
 
