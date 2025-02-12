@@ -1,7 +1,7 @@
 ---
-title: "Modèle de surplus"
+title: "Modèlisation appliquée : ajustement"
 author: "moi"
-date: "2024-02-05"
+date: "2025"
 output:
   html_document: default
   word_document: default
@@ -10,7 +10,7 @@ editor_options:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE,eval=F)
+knitr::opts_chunk$set(echo = TRUE,eval=T)
 #library
 library(dplyr)
 library(ggplot2)
@@ -20,11 +20,12 @@ library(knitr)
 
 ## Introduction
 
-Test du modèle de production de Scheafer sur des données. L'ensemble des exemples est tiré de [ressources](<https://haddonm.github.io/URMQMF/on-modelling.html>), qui utilise le package *MQMF*.
+Ce document vise à expliciter l'ajustement du modèle de production de Scheafer sur des données observée. [ressources](<https://haddonm.github.io/URMQMF/on-modelling.html>), qui utilise le package *MQMF*.
+Dans un premier temps, en rappellant les résultats d'un ajustement d'une régression linéaire à un nuage de point, il est fait usage d'une fonction d'optimisation qui permet, en minimisant une fonction de coût, d'ajuste des paramètres à un modèle donnée. Ensuite il est fait usage d'une approche similaire pour ajuster un modèle de production à un jeu de données.
 
 ## Ajustement ?
 
-Une introduction avec la régression linéaire (en théorie c'est un rappel pratique).
+Il s'agit ici de reprendre les calcul permettant de déterminer les coefficients d'un modèle linéaire ajusté à un nuage de points. En théorie, il s'agit d'un rappel pratique, et en pratique il s'agit d'un rappel théorique.
 
 Soit deux variables  ${y_i,x_i}_{i=1,...,n}$, où $X$ est la variable explicative et $Y$ la variable à expliquer. On cherche à ajuste le modèle de régression linéaire suivant
 
@@ -34,7 +35,9 @@ $$
 
 avec $\epsilon$ le terme d'erreur, $a$ la pente de la droite de régression et $b$ l'ordonnée à l'origine. 
 L'ajustement se fait par la méthode des moindres carrés ordinaire, à savoir $a$ et $b$ doivent minimiser la somme des carrés des termes d'erreur. On supposera les hypothèses sous-tendant l'utilisation de ce type de modèle respectées (non colinéarité des variables explicatives - pas utile avec deux variables, indépendances des erreurs - les termes d'erreur ne sont pas corrélés entre eux, exogénéité - pas de corrélation entre variable explicative et terme d'erreur, homoscédasticité - variance constante des termes d'erreur, normalité des termes d'erreur - $\epsilon$ suit une loi normale).
+
 L'estimation des moindres carrés ordinaires est la soluation du programme de minimisation de la somme des carrés des écarts entre les valeurs prédites et les valeurs observées par rapport aux deux paramètres $a$ et $b$. On minimise donc :
+
 $$
 S=Argmin_{a,b}\sum_{i=1}^{n}\epsilon_i^2=Argmin_{a,b}\sum_{i=1}^{n}(y_i-ax_i-b)^2
 $$
@@ -47,11 +50,11 @@ $$
 \frac{\partial S}{\partial b}(a,b)=0
 \end{cases}
 $$
-En utilisant les règles de dérivation d'une fonction, à savoir dans ce cas précis si $f=u^n$ alors $f'=nu'u^{n-1}$\foonote{mais siiii : $(g \circ f)'=(g'\circ f) \times f'$, cf cours de Terminale ou L3, non ?}
+En utilisant les règles de dérivation d'une fonction, à savoir dans ce cas précis si $f=u^n$ alors $f'=nu'u^{n-1}$^[mais siiii : $(g \circ f)'=(g'\circ f) \times f'$, cf cours de Terminale, non ?]
 $$
 \begin{cases}
-\frac{\partial S}{\partial a}(a,b)=-2\sum_{i=1}^{n}(y_i-ax_i-b)=0\\
-\frac{\partial S}{\partial b}(a,b)=-2\sum_{i=1}^{n}x_i(y_i-ax_i-b)=0
+\frac{\partial S}{\partial b}(a,b)=-2\sum_{i=1}^{n}(y_i-ax_i-b)=0\\
+\frac{\partial S}{\partial a}(a,b)=-2\sum_{i=1}^{n}x_i(y_i-ax_i-b)=0
 \end{cases}
 $$
 La première équation donne
@@ -89,37 +92,194 @@ $$
 \Leftrightarrow a=\frac{\sum_{i=1}^{n}(x_i-\bar x)(y_i-\bar y)}{\sum_{i=1}^{n}(x_i-\bar x)^2} \\
 $$
 
-```{r ajustintro}
+Ainsi nous avons démontré que dans le cas d'étude ci-dessus, donc 
+$$
+y_i=ax_i+b+\epsilon_i
+$$
+
+avec $\epsilon$ le terme d'erreur, $a$ la pente de la droite de régression et $b$ l'ordonnée à l'origine, et toujours deux variables  ${y_i,x_i}_{i=1,...,n}$, où $X$ est la variable explicative et $Y$ la variable à expliquer, que la pente de la droite de régression $a$ est définie par : 
+$$
+a=\frac{\sum_{i=1}^{n}(x_i-\bar x)(y_i-\bar y)}{\sum_{i=1}^{n}(x_i-\bar x)^2} \\
+$$
+et $b$:
+$$
+b=\bar y-a\bar x\\
+$$
+
+En pratique, si on génère le jeu de donnée suivant :
+
+```{r ajustintro1,tab.cap="Données simulées"}
 #create data frame
-df <- data.frame(x=c(1, 3, 4, 7.5),y=c(1, 5, 7, 8))
-plot(df)
-#calcul manuel
+df <- data.frame(x=c(1, 3, 4, 9),y=c(1, 5, 7, 8))
+knitr::kable(df)
+```
+
+Il est possible d'ajuster un modèle linéaire et d'ajuster $a$ et $b$ analytiquement dans un premier temps en suivant les résultats obtenus ci-dessus :
+
+```{r ajustintro2}
+#calcul analytique
 a1<-(df$x-mean(df$x))
 a2<-(df$y-mean(df$y))
 a3<-sum((df$x-mean(df$x))^2)
-a<-sum(a1*a2)/a3
+a_analytique<-sum(a1*a2)/a3
+b_analytique<-mean(df$y)-a_analytique*mean(df$x)
+```
 
+On peut aussi chercher à minimiser les termes d'erreurs à l'aide d'une fonction d'optimisation, ici `optim`. En ce cas, la fonction d'optimisation va utiliser un algorithme d'optimisation (algorithme de Nelder-Mean, Newton, etc.) pour estimer $a$ et $b$. 
 
+La fonction à miniser est 
+
+$$
+S=Argmin_{a,b}\sum_{i=1}^{n}\epsilon_i^2=Argmin_{a,b}\sum_{i=1}^{n}(y_i-ax_i-b)^2
+$$
+
+Elle est définie de manière fonctionnelle (en R) ainsi : 
 
   
+```{r minfctreglin}
 #define function to minimize residual sum of squares
+#data= données
+#par = un vecteur de deux paramètres, le premier étant a et le deuxième b
 min_residuals <- function(data, par) {
-                   with(data, sum((par[1] + par[2] * x - y)^2))
+                   rez<-sum((par[2] + par[1] * data$x - data$y)^2)
+                   return(rez)
 }
+#test de la fonction avec les données simulées et avec a=1 et b=0
+min_residuals(df,c(1,0))
+#résultat: 13.5
+```
+
+On utilise ensuite `optim` sur la fonction à miniser `min_residuals` et les données générées :
+
+```{r ajusmodlin}
 
 #find coefficients of linear regression model
-optim(par=c(0, 1), fn=min_residuals, data=df)
+rezoptim<-optim(par=c(0, 1), fn=min_residuals, data=df)
+rezoptim
 ```
+
+On peut ainsi comparer les estimations, similaires dans le cas présent :
+
+```{r comparerez}
+rez1<-data.frame(method="analytic",a=a_analytique,b=b_analytique)
+rez2<-data.frame(method="optim",a=rezoptim$par[1],b=rezoptim$par[2])
+kable(rbind(rez1,rez2))
+```
+
+
 ## Ajustement du modèle de Scheafer
 
-```{r ajust}
-#ajustement
 
-Schaefer<-function(par,data,verbose=FALSE){
-  r<-par[["r"]]
-  K<-par[["K"]]
-  Binit<-par[["Binit"]]
-  q<-par[["q"]]
+### Rappels
+
+Pour rappel le modèle de Scheafer est ainsi défini : 
+$$
+B_{t=0}=B_0
+$$
+
+$$
+B_{t+1}=B_{t}+rB_t(1-\frac{B_t}{K})-C_t
+$$
+avec 
+
+- $t$ un indice associé au temps (année)
+- $B_t$ la biomasse à l'instant $t$
+- $r$ le taux de croissance
+- $K$ la biomasse maximale que le système peut atteindre (carrying capacity)
+- $C_t$ les captures à l'instant $t$
+
+Une autre manière d'écrire le modèle en exprimant l'évolution de la biomasse en continu :
+
+
+$$
+\frac{dB}{dt} = rB \left(1 - \frac{B}{K}\right) - C
+$$
+Dans le cadre du rendement maximum durable (RMD, ou MSY pour Maximum Sustainable Yield), nous cherchons la capture maximale soutenable, c'est-à-dire la valeur de $C$ maximisée à l’équilibre. A l'équilibre, la biomasse $B$ n'évolue plus, donc sa dérivée s'annulle :
+
+$$\frac{dB}{dt} = 0$$
+En remplaçant par l'expression du modèle :
+
+$$
+rB \left(1 - \frac{B}{K}\right) - C=0\\
+\Leftrightarrow C = rB \left(1 - \frac{B}{K}\right)
+$$
+
+Pour trouver le MSY, nous devons maximiser cette fonction par rapport à $B$. On dérive donc $C$ par rapport à $B$ :
+
+$$
+\frac{dC}{dB} = \left(rB (1 - \frac{B}{K})\right)^{'}\\
+\Leftrightarrow\frac{dC}{dB} = \left(rB - \frac{rB^2}{K}\right)^{'}\\
+\Leftrightarrow \frac{dC}{dB} = r - \frac{2rB}{K} \\
+\Leftrightarrow \frac{dC}{dB} = r \left(1 - \frac{2B}{K} \right)
+$$
+
+La dérivée doit être nulle pour trouver la biomasse optimale $B_{MSY}$ donc
+$$
+\frac{dC}{dB}=0\\
+\Leftrightarrow r \left(1 - \frac{2B_{MSY}}{K} \right)=0\\
+\Leftrightarrow  1 - \frac{2B_{MSY}}{K} =0\\
+\Leftrightarrow  - \frac{2B_{MSY}}{K} =-1\\
+\Leftrightarrow  \frac{2B_{MSY}}{K} =1\\
+\Leftrightarrow  2B_{MSY} =K\\
+\Leftrightarrow  B_{MSY}= \frac{K}{2}\\
+$$
+On calcule alors le rendement maximal soutenable :
+
+$$
+C_{MSY} = rB_{MSY} \left(1 - \frac{B_{MSY}}{K}\right)\\
+\Leftrightarrow C_{MSY} = r\frac{K}{2} \left(1 - \frac{\frac{K}{2}}{K}\right)\\
+\Leftrightarrow C_{MSY} = r\frac{K}{2} \left(1 - \frac{1}{2}\right)\\
+\Leftrightarrow C_{MSY} = \frac{rK}{4}
+$$
+
+Nous avons démontré que le **rendement maximal soutenable (MSY) dans le modèle de Schaefer est égal à \(\frac{rK}{4}\)**.
+
+
+### Indice de biomasse
+
+Dans le modèle de Schaefer, la **biomasse du stock de poissons** $B$ est une variable clé qui représente la dynamique de la population associée. Cependant, il est rarement possible d’estimer directement la biomasse totale d’un stock. C’est pourquoi on utilise **un indice de biomasse** comme une approximation indirecte de $B$. L’indice de biomasse est une mesure relative qui reflète l’abondance du stock, obtenue à partir de données de pêche (e.g. captures par unité d'effort pour une flottille bien renseignée et aux comportements de pêche stable dans le temps) ou de campagnes scientifiques. 
+
+
+L'**indice de biomasse** $I$ doit être une mesure proportionnelle à la biomasse réelle $B$ avec 
+
+$$I = q B$$
+
+avec $I$ l’indice de biomasse, $q$ le **coefficient de capturabilité**, qui relie la biomasse réelle aux observations (souvent inconnu donc estimé statistiquement),$B$ la biomasse réelle. Dans ce cas, au lieu d’estimer directement $B$, on peut utiliser $I$ pour ajuster le modèle de Schaefer en ajoutant le paramètre $q$ à estimer.
+
+---
+
+### **3. Utilisation dans l’équation du modèle de Schaefer**
+Le modèle de Schaefer est basé sur l’équation logistique :
+
+$$
+\frac{dB}{dt} = rB \left(1 - \frac{B}{K} \right) - C
+$$
+
+
+Les indices de biomasse peuvent être obtenus à partir de plusieurs sources :
+
+- Capture par unité d’effort (CPUE) : $CPUE = \frac{C}{E}$ (où $C$ est la capture et $E$ l’effort de pêche), qui est souvent utilisé comme proxy pour $B$.
+- Indices issues des campagnes : échantillonnage indépendant de la pêche, via des campagnes halieutiques.
+- Données de marquage-recapture : suivi des individus marqués pour estimer l’abondance totale.
+- Méthodes acoustiques ou vidéo : Surveillance des stocks dans leur habitat par des méthodes indirectes.
+
+L'utilise de $I$ permet d'obtenir un estimation indirecte de la biomasse totale, mais dépend directement du coefficient de capturabilité $q$ et de son estimation, qui peut varier avec le temps, les techniques de pêche et le comportement des poissons. Les biais d’échantillonnage peuvent fausser les relations en $I$ et $B$ : par par exemple, une CPUE stable peut masquer une baisse réelle du stock si l’effort de pêche augmente.
+
+L’indice de biomasse est un outil essentiel dans le modèle de Schaefer, et plus largement en gestion des pêches car il permet de suivre l’évolution du stock de poissons sans avoir besoin d’estimations précises de la biomasse absolue.
+
+
+### Ajustement du modèle de Scheafer : exemples frustres
+
+Comme vu dans la section dédié à l'ajustement du modèle linéaire, il va être fait usage de la fonction `optim` pour déterminer les paramètres $r$ et $K$ quand on ajuste le modèle à une série de données, et un indice de biomasse va être introduit dans la résolution du modèle.
+
+
+```{r ajust,eval=F}
+Schaefer <- function(par, data, verbose=FALSE)
+{
+  r <- exp(par[["logr"]])
+  K <- exp(par[["logK"]])
+  Binit <- exp(par[["logBinit"]])
+  q <- exp(par[["logq"]])
   year <- data$Year
   C <- data$Catch
   I <- data$Index
@@ -143,29 +303,12 @@ Schaefer<-function(par,data,verbose=FALSE){
   else
     RSS
 }
-```
 
+################################################################################
+## South Atlantic albacore
 
-## Albacore d'Atlantic sud
-
-Des données
-
-```{r data}
 albacore <- read.table("albacore.dat", header=TRUE)
-plot(albacore)
-plot(albacore$Year,albacore$Catch,type="o",pch=20)
-kable(albacore)
-#ggplot2
-alba2<-albacore%>%tidyr::pivot_longer(2:3)
-ggplot(alba2,aes(x=Year,y=value))+geom_line()+facet_grid(~name)
-```
-
-Ajustement du modèle
-
-```{r ajustalba}
-init <- c(r=0.5, K=200, Binit=100, q=0.5)
-init <- c(r=0.3, K=200, Binit=300, q=0.1)
-
+init <- c(logr=log(0.5), logK=log(200), logBinit=log(100), logq=log(0.5))
 
 Schaefer(par=init, albacore)
 optim(init, Schaefer, data=albacore)
@@ -188,10 +331,7 @@ plot(albacore$Year, fit$HR, ylim=c(0,0.35), yaxs="i", type="l",
 
 fit$pars
 fit$refpts
-```
 
-
-```{r ajustflet,eval=F}
 ################################################################################
 ## Georges Bank winter flounder
 
@@ -227,4 +367,7 @@ plot(flounder$Year, fit$HR, ylim=c(0,0.6), yaxs="i", type="l",
 
 t(fit$pars)
 t(fit$refpts)
+
 ```
+
+

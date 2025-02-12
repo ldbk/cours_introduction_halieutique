@@ -11,9 +11,9 @@
 
 <meta name="author" content="moi" />
 
-<meta name="date" content="2024-02-05" />
+<meta name="date" content="2025-01-01" />
 
-<title>Modèle de surplus</title>
+<title>Modèlisation appliquée : ajustement</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -350,23 +350,30 @@ display: none;
 
 
 
-<h1 class="title toc-ignore">Modèle de surplus</h1>
+<h1 class="title toc-ignore">Modèlisation appliquée : ajustement</h1>
 <h4 class="author">moi</h4>
-<h4 class="date">2024-02-05</h4>
+<h4 class="date">2025</h4>
 
 </div>
 
 
 <div id="introduction" class="section level2">
 <h2>Introduction</h2>
-<p>Test du modèle de production de Scheafer sur des données. L’ensemble
-des exemples est tiré de <a href="https://haddonm.github.io/URMQMF/on-modelling.html">ressources</a>,
-qui utilise le package <em>MQMF</em>.</p>
+<p>Ce document vise à expliciter l’ajustement du modèle de production de
+Scheafer sur des données observée. <a href="https://haddonm.github.io/URMQMF/on-modelling.html">ressources</a>,
+qui utilise le package <em>MQMF</em>. Dans un premier temps, en
+rappellant les résultats d’un ajustement d’une régression linéaire à un
+nuage de point, il est fait usage d’une fonction d’optimisation qui
+permet, en minimisant une fonction de coût, d’ajuste des paramètres à un
+modèle donnée. Ensuite il est fait usage d’une approche similaire pour
+ajuster un modèle de production à un jeu de données.</p>
 </div>
 <div id="ajustement" class="section level2">
 <h2>Ajustement ?</h2>
-<p>Une introduction avec la régression linéaire (en théorie c’est un
-rappel pratique).</p>
+<p>Il s’agit ici de reprendre les calcul permettant de déterminer les
+coefficients d’un modèle linéaire ajusté à un nuage de points. En
+théorie, il s’agit d’un rappel pratique, et en pratique il s’agit d’un
+rappel théorique.</p>
 <p>Soit deux variables <span class="math inline">\({y_i,x_i}_{i=1,...,n}\)</span>, où <span class="math inline">\(X\)</span> est la variable explicative et <span class="math inline">\(Y\)</span> la variable à expliquer. On cherche à
 ajuste le modèle de régression linéaire suivant</p>
 <p><span class="math display">\[
@@ -383,11 +390,12 @@ variables explicatives - pas utile avec deux variables, indépendances
 des erreurs - les termes d’erreur ne sont pas corrélés entre eux,
 exogénéité - pas de corrélation entre variable explicative et terme
 d’erreur, homoscédasticité - variance constante des termes d’erreur,
-normalité des termes d’erreur - <span class="math inline">\(\epsilon\)</span> suit une loi normale).
-L’estimation des moindres carrés ordinaires est la soluation du
+normalité des termes d’erreur - <span class="math inline">\(\epsilon\)</span> suit une loi normale).</p>
+<p>L’estimation des moindres carrés ordinaires est la soluation du
 programme de minimisation de la somme des carrés des écarts entre les
 valeurs prédites et les valeurs observées par rapport aux deux
-paramètres <span class="math inline">\(a\)</span> et <span class="math inline">\(b\)</span>. On minimise donc : <span class="math display">\[
+paramètres <span class="math inline">\(a\)</span> et <span class="math inline">\(b\)</span>. On minimise donc :</p>
+<p><span class="math display">\[
 S=Argmin_{a,b}\sum_{i=1}^{n}\epsilon_i^2=Argmin_{a,b}\sum_{i=1}^{n}(y_i-ax_i-b)^2
 \]</span></p>
 <p>La fonction <span class="math inline">\(S\)</span> est une fonction
@@ -400,10 +408,10 @@ partir de la résolution du système</p>
 \end{cases}
 \]</span> En utilisant les règles de dérivation d’une fonction, à savoir
 dans ce cas précis si <span class="math inline">\(f=u^n\)</span> alors
-<span class="math inline">\(f&#39;=nu&#39;u^{n-1}\)</span> <span class="math display">\[
+<span class="math inline">\(f&#39;=nu&#39;u^{n-1}\)</span><a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a> <span class="math display">\[
 \begin{cases}
-\frac{\partial S}{\partial a}(a,b)=-2\sum_{i=1}^{n}(y_i-ax_i-b)=0\\
-\frac{\partial S}{\partial b}(a,b)=-2\sum_{i=1}^{n}x_i(y_i-ax_i-b)=0
+\frac{\partial S}{\partial b}(a,b)=-2\sum_{i=1}^{n}(y_i-ax_i-b)=0\\
+\frac{\partial S}{\partial a}(a,b)=-2\sum_{i=1}^{n}x_i(y_i-ax_i-b)=0
 \end{cases}
 \]</span> La première équation donne <span class="math display">\[
 -2\sum_{i=1}^{n}(y_i-ax_i-b)=0\\
@@ -448,39 +456,263 @@ y)}{\sum_{i=1}^{n}x_i(x_i-\bar x)} \\
 \Leftrightarrow a=\frac{\sum_{i=1}^{n}(x_i-\bar x)(y_i-\bar
 y)}{\sum_{i=1}^{n}(x_i-\bar x)^2} \\
 \]</span></p>
+<p>Ainsi nous avons démontré que dans le cas d’étude ci-dessus, donc
+<span class="math display">\[
+y_i=ax_i+b+\epsilon_i
+\]</span></p>
+<p>avec <span class="math inline">\(\epsilon\)</span> le terme d’erreur,
+<span class="math inline">\(a\)</span> la pente de la droite de
+régression et <span class="math inline">\(b\)</span> l’ordonnée à
+l’origine, et toujours deux variables <span class="math inline">\({y_i,x_i}_{i=1,...,n}\)</span>, où <span class="math inline">\(X\)</span> est la variable explicative et <span class="math inline">\(Y\)</span> la variable à expliquer, que la pente
+de la droite de régression <span class="math inline">\(a\)</span> est
+définie par : <span class="math display">\[
+a=\frac{\sum_{i=1}^{n}(x_i-\bar x)(y_i-\bar y)}{\sum_{i=1}^{n}(x_i-\bar
+x)^2} \\
+\]</span> et <span class="math inline">\(b\)</span>: <span class="math display">\[
+b=\bar y-a\bar x\\
+\]</span></p>
+<p>En pratique, si on génère le jeu de donnée suivant :</p>
 <pre class="r"><code>#create data frame
-df &lt;- data.frame(x=c(1, 3, 4, 7.5),y=c(1, 5, 7, 8))
-plot(df)
-#calcul manuel
+df &lt;- data.frame(x=c(1, 3, 4, 9),y=c(1, 5, 7, 8))
+knitr::kable(df)</code></pre>
+<table>
+<caption>Données simulées</caption>
+<thead>
+<tr class="header">
+<th align="right">x</th>
+<th align="right">y</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">1</td>
+<td align="right">1</td>
+</tr>
+<tr class="even">
+<td align="right">3</td>
+<td align="right">5</td>
+</tr>
+<tr class="odd">
+<td align="right">4</td>
+<td align="right">7</td>
+</tr>
+<tr class="even">
+<td align="right">9</td>
+<td align="right">8</td>
+</tr>
+</tbody>
+</table>
+<p>Il est possible d’ajuster un modèle linéaire et d’ajuster <span class="math inline">\(a\)</span> et <span class="math inline">\(b\)</span> analytiquement dans un premier temps en
+suivant les résultats obtenus ci-dessus :</p>
+<pre class="r"><code>#calcul analytique
 a1&lt;-(df$x-mean(df$x))
 a2&lt;-(df$y-mean(df$y))
 a3&lt;-sum((df$x-mean(df$x))^2)
-a&lt;-sum(a1*a2)/a3
-
-a1&lt;-df$x*(df$y-mean(df$y))
-a2&lt;-df$x*(df$x-mean(df$x))
-a3&lt;-sum((df$x-mean(df$x))^2)
-a&lt;-sum(a1)/sum(a2)
-
-
-  
-#define function to minimize residual sum of squares
+a_analytique&lt;-sum(a1*a2)/a3
+b_analytique&lt;-mean(df$y)-a_analytique*mean(df$x)</code></pre>
+<p>On peut aussi chercher à minimiser les termes d’erreurs à l’aide
+d’une fonction d’optimisation, ici <code>optim</code>. En ce cas, la
+fonction d’optimisation va utiliser un algorithme d’optimisation
+(algorithme de Nelder-Mean, Newton, etc.) pour estimer <span class="math inline">\(a\)</span> et <span class="math inline">\(b\)</span>.</p>
+<p>La fonction à miniser est</p>
+<p><span class="math display">\[
+S=Argmin_{a,b}\sum_{i=1}^{n}\epsilon_i^2=Argmin_{a,b}\sum_{i=1}^{n}(y_i-ax_i-b)^2
+\]</span></p>
+<p>Elle est définie de manière fonctionnelle (en R) ainsi :</p>
+<pre class="r"><code>#define function to minimize residual sum of squares
+#data= données
+#par = un vecteur de deux paramètres, le premier étant a et le deuxième b
 min_residuals &lt;- function(data, par) {
-                   with(data, sum((par[1] + par[2] * x - y)^2))
+                   rez&lt;-sum((par[2] + par[1] * data$x - data$y)^2)
+                   return(rez)
 }
-
-#find coefficients of linear regression model
-optim(par=c(0, 1), fn=min_residuals, data=df)</code></pre>
+#test de la fonction avec les données simulées et avec a=1 et b=0
+min_residuals(df,c(1,0))</code></pre>
+<pre><code>## [1] 14</code></pre>
+<pre class="r"><code>#résultat: 13.5</code></pre>
+<p>On utilise ensuite <code>optim</code> sur la fonction à miniser
+<code>min_residuals</code> et les données générées :</p>
+<pre class="r"><code>#find coefficients of linear regression model
+rezoptim&lt;-optim(par=c(0, 1), fn=min_residuals, data=df)
+rezoptim</code></pre>
+<pre><code>## $par
+## [1] 0.7698708 1.9781611
+## 
+## $value
+## [1] 8.158274
+## 
+## $counts
+## function gradient 
+##       69       NA 
+## 
+## $convergence
+## [1] 0
+## 
+## $message
+## NULL</code></pre>
+<p>On peut ainsi comparer les estimations, similaires dans le cas
+présent :</p>
+<pre class="r"><code>rez1&lt;-data.frame(method=&quot;analytic&quot;,a=a_analytique,b=b_analytique)
+rez2&lt;-data.frame(method=&quot;optim&quot;,a=rezoptim$par[1],b=rezoptim$par[2])
+kable(rbind(rez1,rez2))</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left">method</th>
+<th align="right">a</th>
+<th align="right">b</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">analytic</td>
+<td align="right">0.7697842</td>
+<td align="right">1.978417</td>
+</tr>
+<tr class="even">
+<td align="left">optim</td>
+<td align="right">0.7698708</td>
+<td align="right">1.978161</td>
+</tr>
+</tbody>
+</table>
 </div>
 <div id="ajustement-du-modèle-de-scheafer" class="section level2">
 <h2>Ajustement du modèle de Scheafer</h2>
-<pre class="r"><code>#ajustement
-
-Schaefer&lt;-function(par,data,verbose=FALSE){
-  r&lt;-par[[&quot;r&quot;]]
-  K&lt;-par[[&quot;K&quot;]]
-  Binit&lt;-par[[&quot;Binit&quot;]]
-  q&lt;-par[[&quot;q&quot;]]
+<div id="rappels" class="section level3">
+<h3>Rappels</h3>
+<p>Pour rappel le modèle de Scheafer est ainsi défini : <span class="math display">\[
+B_{t=0}=B_0
+\]</span></p>
+<p><span class="math display">\[
+B_{t+1}=B_{t}+rB_t(1-\frac{B_t}{K})-C_t
+\]</span> avec</p>
+<ul>
+<li><span class="math inline">\(t\)</span> un indice associé au temps
+(année)</li>
+<li><span class="math inline">\(B_t\)</span> la biomasse à l’instant
+<span class="math inline">\(t\)</span></li>
+<li><span class="math inline">\(r\)</span> le taux de croissance</li>
+<li><span class="math inline">\(K\)</span> la biomasse maximale que le
+système peut atteindre (carrying capacity)</li>
+<li><span class="math inline">\(C_t\)</span> les captures à l’instant
+<span class="math inline">\(t\)</span></li>
+</ul>
+<p>Une autre manière d’écrire le modèle en exprimant l’évolution de la
+biomasse en continu :</p>
+<p><span class="math display">\[
+\frac{dB}{dt} = rB \left(1 - \frac{B}{K}\right) - C
+\]</span> Dans le cadre du rendement maximum durable (RMD, ou MSY pour
+Maximum Sustainable Yield), nous cherchons la capture maximale
+soutenable, c’est-à-dire la valeur de <span class="math inline">\(C\)</span> maximisée à l’équilibre. A l’équilibre,
+la biomasse <span class="math inline">\(B\)</span> n’évolue plus, donc
+sa dérivée s’annulle :</p>
+<p><span class="math display">\[\frac{dB}{dt} = 0\]</span> En remplaçant
+par l’expression du modèle :</p>
+<p><span class="math display">\[
+rB \left(1 - \frac{B}{K}\right) - C=0\\
+\Leftrightarrow C = rB \left(1 - \frac{B}{K}\right)
+\]</span></p>
+<p>Pour trouver le MSY, nous devons maximiser cette fonction par rapport
+à <span class="math inline">\(B\)</span>. On dérive donc <span class="math inline">\(C\)</span> par rapport à <span class="math inline">\(B\)</span> :</p>
+<p><span class="math display">\[
+\frac{dC}{dB} = \left(rB (1 - \frac{B}{K})\right)^{&#39;}\\
+\Leftrightarrow\frac{dC}{dB} = \left(rB -
+\frac{rB^2}{K}\right)^{&#39;}\\
+\Leftrightarrow \frac{dC}{dB} = r - \frac{2rB}{K} \\
+\Leftrightarrow \frac{dC}{dB} = r \left(1 - \frac{2B}{K} \right)
+\]</span></p>
+<p>La dérivée doit être nulle pour trouver la biomasse optimale <span class="math inline">\(B_{MSY}\)</span> donc <span class="math display">\[
+\frac{dC}{dB}=0\\
+\Leftrightarrow r \left(1 - \frac{2B_{MSY}}{K} \right)=0\\
+\Leftrightarrow  1 - \frac{2B_{MSY}}{K} =0\\
+\Leftrightarrow  - \frac{2B_{MSY}}{K} =-1\\
+\Leftrightarrow  \frac{2B_{MSY}}{K} =1\\
+\Leftrightarrow  2B_{MSY} =K\\
+\Leftrightarrow  B_{MSY}= \frac{K}{2}\\
+\]</span> On calcule alors le rendement maximal soutenable :</p>
+<p><span class="math display">\[
+C_{MSY} = rB_{MSY} \left(1 - \frac{B_{MSY}}{K}\right)\\
+\Leftrightarrow C_{MSY} = r\frac{K}{2} \left(1 -
+\frac{\frac{K}{2}}{K}\right)\\
+\Leftrightarrow C_{MSY} = r\frac{K}{2} \left(1 - \frac{1}{2}\right)\\
+\Leftrightarrow C_{MSY} = \frac{rK}{4}
+\]</span></p>
+<p>Nous avons démontré que le <strong>rendement maximal soutenable (MSY)
+dans le modèle de Schaefer est égal à <span class="math inline">\(\frac{rK}{4}\)</span></strong>.</p>
+</div>
+<div id="indice-de-biomasse" class="section level3">
+<h3>Indice de biomasse</h3>
+<p>Dans le modèle de Schaefer, la <strong>biomasse du stock de
+poissons</strong> <span class="math inline">\(B\)</span> est une
+variable clé qui représente la dynamique de la population associée.
+Cependant, il est rarement possible d’estimer directement la biomasse
+totale d’un stock. C’est pourquoi on utilise <strong>un indice de
+biomasse</strong> comme une approximation indirecte de <span class="math inline">\(B\)</span>. L’indice de biomasse est une mesure
+relative qui reflète l’abondance du stock, obtenue à partir de données
+de pêche (e.g. captures par unité d’effort pour une flottille bien
+renseignée et aux comportements de pêche stable dans le temps) ou de
+campagnes scientifiques.</p>
+<p>L’<strong>indice de biomasse</strong> <span class="math inline">\(I\)</span> doit être une mesure proportionnelle à
+la biomasse réelle <span class="math inline">\(B\)</span> avec</p>
+<p><span class="math display">\[I = q B\]</span></p>
+<p>avec <span class="math inline">\(I\)</span> l’indice de biomasse,
+<span class="math inline">\(q\)</span> le <strong>coefficient de
+capturabilité</strong>, qui relie la biomasse réelle aux observations
+(souvent inconnu donc estimé statistiquement),<span class="math inline">\(B\)</span> la biomasse réelle. Dans ce cas, au
+lieu d’estimer directement <span class="math inline">\(B\)</span>, on
+peut utiliser <span class="math inline">\(I\)</span> pour ajuster le
+modèle de Schaefer en ajoutant le paramètre <span class="math inline">\(q\)</span> à estimer.</p>
+<hr />
+</div>
+<div id="utilisation-dans-léquation-du-modèle-de-schaefer" class="section level3">
+<h3><strong>3. Utilisation dans l’équation du modèle de
+Schaefer</strong></h3>
+<p>Le modèle de Schaefer est basé sur l’équation logistique :</p>
+<p><span class="math display">\[
+\frac{dB}{dt} = rB \left(1 - \frac{B}{K} \right) - C
+\]</span></p>
+<p>Les indices de biomasse peuvent être obtenus à partir de plusieurs
+sources :</p>
+<ul>
+<li>Capture par unité d’effort (CPUE) : <span class="math inline">\(CPUE
+= \frac{C}{E}\)</span> (où <span class="math inline">\(C\)</span> est la
+capture et <span class="math inline">\(E\)</span> l’effort de pêche),
+qui est souvent utilisé comme proxy pour <span class="math inline">\(B\)</span>.</li>
+<li>Indices issues des campagnes : échantillonnage indépendant de la
+pêche, via des campagnes halieutiques.</li>
+<li>Données de marquage-recapture : suivi des individus marqués pour
+estimer l’abondance totale.</li>
+<li>Méthodes acoustiques ou vidéo : Surveillance des stocks dans leur
+habitat par des méthodes indirectes.</li>
+</ul>
+<p>L’utilise de <span class="math inline">\(I\)</span> permet d’obtenir
+un estimation indirecte de la biomasse totale, mais dépend directement
+du coefficient de capturabilité <span class="math inline">\(q\)</span>
+et de son estimation, qui peut varier avec le temps, les techniques de
+pêche et le comportement des poissons. Les biais d’échantillonnage
+peuvent fausser les relations en <span class="math inline">\(I\)</span>
+et <span class="math inline">\(B\)</span> : par par exemple, une CPUE
+stable peut masquer une baisse réelle du stock si l’effort de pêche
+augmente.</p>
+<p>L’indice de biomasse est un outil essentiel dans le modèle de
+Schaefer, et plus largement en gestion des pêches car il permet de
+suivre l’évolution du stock de poissons sans avoir besoin d’estimations
+précises de la biomasse absolue.</p>
+</div>
+<div id="ajustement-du-modèle-de-scheafer-exemples-frustres" class="section level3">
+<h3>Ajustement du modèle de Scheafer : exemples frustres</h3>
+<p>Comme vu dans la section dédié à l’ajustement du modèle linéaire, il
+va être fait usage de la fonction <code>optim</code> pour déterminer les
+paramètres <span class="math inline">\(r\)</span> et <span class="math inline">\(K\)</span> quand on ajuste le modèle à une série
+de données, et un indice de biomasse va être introduit dans la
+résolution du modèle.</p>
+<pre class="r"><code>Schaefer &lt;- function(par, data, verbose=FALSE)
+{
+  r &lt;- exp(par[[&quot;logr&quot;]])
+  K &lt;- exp(par[[&quot;logK&quot;]])
+  Binit &lt;- exp(par[[&quot;logBinit&quot;]])
+  q &lt;- exp(par[[&quot;logq&quot;]])
   year &lt;- data$Year
   C &lt;- data$Catch
   I &lt;- data$Index
@@ -503,22 +735,13 @@ Schaefer&lt;-function(par,data,verbose=FALSE){
     list(B=B, HR=C/B, Ifit=Ifit, res=res, pars=pars, refpts=refpts, RSS=RSS)
   else
     RSS
-}</code></pre>
-</div>
-<div id="albacore-datlantic-sud" class="section level2">
-<h2>Albacore d’Atlantic sud</h2>
-<p>Des données</p>
-<pre class="r"><code>albacore &lt;- read.table(&quot;albacore.dat&quot;, header=TRUE)
-plot(albacore)
-plot(albacore$Year,albacore$Catch,type=&quot;o&quot;,pch=20)
-kable(albacore)
-#ggplot2
-alba2&lt;-albacore%&gt;%tidyr::pivot_longer(2:3)
-ggplot(alba2,aes(x=Year,y=value))+geom_line()+facet_grid(~name)</code></pre>
-<p>Ajustement du modèle</p>
-<pre class="r"><code>init &lt;- c(r=0.5, K=200, Binit=100, q=0.5)
-init &lt;- c(r=0.3, K=200, Binit=300, q=0.1)
+}
 
+################################################################################
+## South Atlantic albacore
+
+albacore &lt;- read.table(&quot;albacore.dat&quot;, header=TRUE)
+init &lt;- c(logr=log(0.5), logK=log(200), logBinit=log(100), logq=log(0.5))
 
 Schaefer(par=init, albacore)
 optim(init, Schaefer, data=albacore)
@@ -540,8 +763,9 @@ plot(albacore$Year, fit$HR, ylim=c(0,0.35), yaxs=&quot;i&quot;, type=&quot;l&quo
      lwd=2, xlab=&quot;Year&quot;, ylab=&quot;Harvest rate&quot;, main=&quot;Albacore: Harvest rate&quot;)
 
 fit$pars
-fit$refpts</code></pre>
-<pre class="r"><code>################################################################################
+fit$refpts
+
+################################################################################
 ## Georges Bank winter flounder
 
 flounder &lt;- read.table(&quot;flounder.dat&quot;, header=TRUE)
@@ -576,6 +800,15 @@ plot(flounder$Year, fit$HR, ylim=c(0,0.6), yaxs=&quot;i&quot;, type=&quot;l&quot
 
 t(fit$pars)
 t(fit$refpts)</code></pre>
+</div>
+</div>
+<div class="footnotes footnotes-end-of-document">
+<hr />
+<ol>
+<li id="fn1"><p>mais siiii : <span class="math inline">\((g \circ
+f)&#39;=(g&#39;\circ f) \times f&#39;\)</span>, cf cours de Terminale,
+non ?<a href="#fnref1" class="footnote-back">↩︎</a></p></li>
+</ol>
 </div>
 
 

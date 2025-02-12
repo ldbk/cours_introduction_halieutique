@@ -25,6 +25,11 @@ Test du modèle de production de Scheafer. L'ensemble des exemples est tiré de 
 ```{r appman}
 #test modèle de Scheaffer
 B1=10+0.2*10*(1-10/100)-1
+#test r=0.2
+B1=10+0.5*10*(1-10/100)-1
+#test K=10
+B1=10+0.5*10*(1-10/10)-1
+
 #Même chose avec 5 tonnes
 B1=10+0.2*10*(1-10/100)-5
 #même calcul avec 5t prélevée l'année d'après
@@ -40,10 +45,13 @@ B2<-function(B1,C1,r,K){
   return(B2)
 }
 
-B2(10,1,0.2)
+B2(10,1,0.2,100)
+
 
 
 B2(B1=10,C1=1,r=0.2,K=100)
+
+
 10+0.2*10*(1-10/100)-1
 
 B2(10,1,2.8,100)
@@ -82,9 +90,9 @@ plot(ans, main=label, cex=0.9, font=7) #Schaefer dynamics  #
 
 ```{r modetud2}
 yrs=600
-ans <- discretelogistic(r=2.55,K=1000.0,N0=100,Ct=0.0,Yrs=yrs)
+ans <- discretelogistic(r=0.1,K=1000.0,N0=100,Ct=0.0,Yrs=yrs)
 plot(ans)
-tail(ans,30)
+tail(ans,10)
 plot(ans[500:600,],type="b")
 ```
 
@@ -115,11 +123,11 @@ kable(result)
 ## Captures et comportement du modèle
 ```{r modelcapt1}
 #Effect of catches on stability properties of discretelogistic
-yrs=50; Kval=1000.0
-nocatch <- discretelogistic(r=2.56,K=Kval,N0=500,Ct=0,Yrs=yrs)
-catch50 <- discretelogistic(r=2.56,K=Kval,N0=500,Ct=50,Yrs=yrs)
-catch200 <- discretelogistic(r=2.56,K=Kval,N0=500,Ct=200,Yrs=yrs)
-catch300 <- discretelogistic(r=2.56,K=Kval,N0=500,Ct=300,Yrs=yrs)
+yrs=40; Kval=100.0
+nocatch <- discretelogistic(r=2.96,K=Kval,N0=50,Ct=0,Yrs=yrs)
+catch50 <- discretelogistic(r=2.96,K=Kval,N0=50,Ct=50,Yrs=yrs)
+catch400 <- discretelogistic(r=2.96,K=Kval,N0=50,Ct=400,Yrs=yrs)
+catch500 <- discretelogistic(r=2.96,K=Kval,N0=50,Ct=641,Yrs=yrs)
 ```
 
 ```{r modelcapt2}
@@ -135,8 +143,8 @@ par(mfrow=c(2,2),mai=c(0.25,0.4,0.05,0.05),oma=c(1.0,0,0.25,0))
 par(cex=0.75, mgp=c(1.35,0.35,0), font.axis=7,font=7,font.lab=7)
 plottime(nocatch,"Catch = 0")
 plottime(catch50,"Catch = 50")
-plottime(catch200,"Catch = 200")
-plottime(catch300,"Catch = 300")
+plottime(catch400,"Catch = 400")
+plottime(catch500,"Catch = 641")
 mtext("years",side=1,outer=TRUE,line=-0.2,font=7,cex=1.0)
 ```
 

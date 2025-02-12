@@ -1,0 +1,136 @@
+---
+title: "Ajustement d'un modèle de production"
+output:
+  html_document: 
+    fig_caption: yes
+  word_document: 
+    fig_caption: yes
+date: "2025"
+author: moi
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#packages
+library(dplyr)
+library(ggplot2)
+library(data.table)
+library(sf)
+```
+
+## Consignes
+
+- un rapport court en Rmarkdown
+- une introduction qui contextualise l'analyse 
+- une description des jeux de données utilisées avec leurs caractéristiques principales (période temporelle, zone géographique, variables et descriptions des variables) (reprendre le texte rédigé dans le rapport précédent)
+- un ajustement du modèle de Scheager
+- un commentaire des résultats de l'analyse
+- à envoyer à laurent.dubroca@ifremer.fr (le fichier Rmarkdown et le fichier html/docx/pdf, au choix)
+- attention à bien spécifier le chemin pour le répertoire de travail (par défaut je prends le répertoire de travail du script courant) et établir correctement les chemins vers les fichiers à lire (utilisez `getwd()`!)
+- rappelle de syntaxe : lien http <http://rmarkdown.rstudio.com>, **gras**, *italique*, `du code`, une reference en bas de page^[mettre la référence ici].
+
+
+
+
+## Introduction
+
+Contextualiser le travail ici. Ajustement du modèle de Scheaffer, gestion des stocks, etc
+
+## Matériels et méthodes
+
+### Données
+
+Décrire brièvement les données utilisées : source, forme, information, agrégation, etc.
+
+
+```{r dataread,eval=T,include=F}
+#effort
+efforts<-fread(cmd = 'unzip -p ./data/efforts.csv.zip')
+#landings
+landings1<-fread(cmd = 'unzip -p ./data/landings_2011_2023.csv.zip')
+landings2<-fread(cmd = 'unzip -p ./data/landings_2000_2010.csv.zip')
+landings<-rbind(landings1,landings2)
+rm(landings1,landings2)
+
+refgear<-read.csv2("../data/REFERENTIEL_ENGINS.txt",fileEncoding="ISO-8859-1",sep="\t")
+refspp<-read.csv2("../data/REFERENTIEL_ESPECES.txt",fileEncoding="ISO-8859-1",sep="\t")
+refmet<-read.csv2("../data/REFERENTIEL_METIERS_DCF_6.txt",fileEncoding="ISO-8859-1",sep="\t")
+refport<-read.csv2("../data/REFERENTIEL_PORTS.txt",fileEncoding="ISO-8859-1",sep="\t")
+allgeo<-readRDS("../data/allgeo.rds")
+
+#time series captures
+lanMUR<-lan %>% filter(taxon=="MUR")
+#lan3spp<-lan %>% filter(taxon%in%c("MUR","BSS","HOM"))
+#lanSeiche<-lan%>%filter(grepl("Seiche",ESP_LIB_FAO_FRANCAIS))
+#combine par année et somme des débarquements
+lanmuryear<-lanMUR%>%
+  group_by(year)%>%
+  summarise(w=sum(landWt/1000,na.rm=T))
+
+effyear<-efforts%>%filter(grepl("OTB",metier6))%>%group_by(year)%>%
+  summarise(eff=sum(daysAtSea,na.rm=T))
+
+#ajust
+dataspm<-full_join(lanmuryear,effyear)%>%
+  transmute(year=year,catch=w,cpue=w/eff)
+ dataspm <- as.matrix(dataspm) # faster than a data.frame
+ pars <- log(c(r=0.2,K=3000,Binit=800,sigma=0.2))
+ ans <- fitSPM(pars,fish=dataspm,schaefer=TRUE,maxiter=1000)
+ rez<-outfit(ans)   # Schaefer model  -12.12879
+ 
+ 
+ ans <- plotspmmod(inp=ans$estimate,indat=dataspm,schaefer=TRUE,  
+                 addrmse=TRUE,plotprod=FALSE)  
+ 
+ nocatch <- discretelogistic(r=0.15,K=33000,N0=82,Ct=4000,Yrs=30)
+plottime(nocatch,"Theoritical model")
+
+ 
+
+```
+
+# indice de campagne
+
+test
+
+```{r indice,eval=T,include=F}
+# library
+library(icesDatras)
+library(dplyr)
+library(arrow)
+require(openxlsx)
+library(sdmTMB)
+library(sdmTMBextra)
+library(randomForest)
+library(ggplot2)
+#truc pour mesh
+library(sf)
+library(rnaturalearth)
+
+library(icesVocab)
+
+#rouget
+#aphia <- icesVocab::findAphia(c("Mullus surmuletus"),latin=T)
+aphiaid<-126989
+spp<-"Mullus surmuletus"
+taxon<-"MUR"
+
+
+#get the data ?
+Iraw<-getCatchWgt(survey = "FR-CGFS", years = 2000:2023, quarters = 4, aphia = 126989)
+saveRDS(Iraw,file="Iraw.rds")
+Iraw<-readRDS("Iraw.rds")
+
+
+
+
+```
+
+# Modèle
+
+```{r mod,eval=T,include=F}
+```
+
+
