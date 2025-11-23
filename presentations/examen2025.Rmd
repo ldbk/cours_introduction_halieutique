@@ -1,0 +1,93 @@
+---
+title: "Sujet d'Examen 2025"
+subtitle: Exploitation et gestion en halieutique (45 minutes)
+output: pdf_document
+---
+
+# Rappels
+
+On rappelle ici la formulation d'un modèle de dynamique de biomasse, le modèle
+de Scheafer:
+$$
+B_{t=0}=B_0
+$$
+$$
+B_{t+1}=B_{t}+rB_t(1-\frac{B_t}{K})-C_t
+$$
+avec
+
+- $t$ un indice associé au temps (année)
+- $B_t$ la biomasse à l'instant $t$
+- $r$ le taux de croissance
+- $K$ la biomasse maximale que le système peut atteindre (carrying capacity)
+- $C_t$ les captures à l'instant $t$
+
+Exemple : si $B_t$=10t, $r$=0.2, $K$=100t et $C_t$=1, $B_t+1$=10.8
+$B_{t+1}=10+0.2*10*(1-10/100)-1=10.8$
+
+Dans ce cadre de modélisation, les captures au rendement maximal durable (RMD, ou MSY pour Maximum Sustainable Yield) peuvent être estimées par la formule :
+
+$$
+C_{MSY}= \frac{rK}{4}
+$$
+
+On définit aussi la mortalité par pêche (F), qui représente le taux de mortalité d’un stock de poissons causé par l’activité de pêche, la biomasse limite $B_{lim}$, limite à partir de laquelle la survie d'un stock est compromise. 
+
+On rappelle aussi que le diagramme de Kobé est un outil visuel utilisé en gestion des pêches pour évaluer l’état d’un stock de poissons par rapport à la biomasse $B$ et la mortalité par pêche $F$ :
+
+
+```{r kobe,include=T,echo=F,warning=F,message=F,out.width="56%",fig.align="center",fig.cap="Diagramme de Kobe, et position de 5 stocks dans ce diagramme"}
+# Chargement des bibliothèques
+library(ggplot2);library(dplyr);library(ggrepel)
+# Définition des seuils biologiques
+BMSY <- 0.5  # Biomasse correspondant au rendement maximal soutenable (en tonnes)
+FMSY <- 0.5     # Mortalité par pêche correspondant au rendement maximal soutenable
+Blim <- 0.2 * BMSY  # Biomasse limite (ex: 40% de BMSY)
+# Définition des zones du diagramme de Kobé
+zones <- data.frame(
+  xmin = c(0, FMSY, 0, FMSY, 0),
+  xmax = c(FMSY, 1, FMSY, 1, 1),
+  ymin = c(0, 0, BMSY, BMSY, 0),
+  ymax = c(BMSY, BMSY, 1, 1, Blim),
+#  zone = c("Surpêche", "Pêche durable", "Sous-exploitation", "Transition", "Stock critique")
+  zone = c("Sous-exploitation", "Surpêche", "Pêche durable", "Transition", "Stock critique")
+)
+# Définition des couleurs pour chaque zone
+zone_colors <- c("Surpêche" = "red",
+                 "Pêche durable" = "green",
+                 "Sous-exploitation" = "yellow",
+                 "Transition" = "orange",
+                 "Stock critique/effondré" = "black")
+
+# Exemple de stocks avec biomasse et mortalité absolues
+stocks_data <- data.frame(
+  F = c(0.2, 0.7, 0.6, 0.1, 0.3),  # Mortalité absolue
+  B = c(0.8, 0.25, 0.6, 0.3, 0.04),  # Biomasse absolue en tonnes
+  Label = c("Stock A", "Stock B", "Stock C", "Stock D", "Stock E")
+)
+
+ggplot() +
+  geom_rect(data = zones, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax, fill = zone), alpha = 1) +
+  geom_text_repel(data=stocks_data,aes(x=F,y=B,label=Label))+
+  geom_point(data=stocks_data,aes(x=F,y=B))+
+  xlim(0,1)+ylim(0,1)+
+  scale_fill_manual(values = zone_colors)+
+  geom_vline(xintercept = FMSY,linetype="dotted")+
+  geom_hline(yintercept = c(Blim,BMSY),linetype="dotted")+
+  scale_x_continuous(breaks=FMSY,labels=expression(F[MSY]))+#,expand=expansion(mult=c(0,0)))+
+  scale_y_continuous(breaks=c(Blim,BMSY),labels=expression(B[lim],B[MSY]))+#,expand=expansion(mult=c(0,0)))+
+  xlab("Mortalité par pêche (F)")+ylab("Biomasse (B)")+labs(fill="Etat d'exploitation")+
+  geom_segment(aes(x = c(0,0), y = c(0,0), xend = c(1.1,0), yend = c(0,1.1)), arrow = arrow(length=unit(0.3,"cm")))+
+  theme(panel.grid.minor=element_blank(),panel.border=element_blank(),panel.background=element_blank())
+```
+
+# Questions
+
+Vous répondrez aux trois questions suivantes :
+
+Question 1 : À quoi correspondent les captures au rendement maximal durable dans la dynamique d'une population exploitée par la pêche ? Vous répondrez en vous appuyant sur les notions abordées en cours.
+
+Question 2 : Décrivez l’état d’exploitation des stocks A, B, C, D et E présent sur la figure 1, en explicitant les niveaux de biomasse et de mortalité par pêche. Vous pourrez vous appuyer sur des exemples numériques et narratifs, qu’ils soient fictifs ou réels.
+
+Question 3 : Proposez des éléments de gestion pour trois de ces stocks en vue d’atteindre ou maintenir  le rendement maximal durable. Illustrez graphiquement les trajectoires attendues de biomasse et de mortalité par pêche en fonction du temps, et des règles de gestion que vous suggérez, et commentez ces trajectoires.
+

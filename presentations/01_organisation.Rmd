@@ -35,9 +35,8 @@ La navigation au sein de ce document html peut s'effectuer à l'aide des touches
 ## Organisation
 
 - 12 heures : 
-  - lundi 10 février 2025 (14h-17h), 
-  - mardi 11 février 2025 (9h-12h, 14h-17h),
-  - mercredi 12 février 2025 (9h-12h)
+  - lundi 24 novembre 2025 (9h-12h/AC 137, 14h-17h/AC 137),  
+  - mardi 25 novembre 2025 (9h-12h/B1-J41, 14h-17h/AC 237),
 - en présentiel
 - alternance de présentations et d'exercices pratiques
 - matériels : un ordinateur avec [RStudio Desktop](https://rstudio.com/products/rstudio/download/) installé, et une connection internet  
