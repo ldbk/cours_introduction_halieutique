@@ -49,18 +49,18 @@ Les données sont stockées dans différents fichiers. Décrire la structure ici
 
 ```{r dataread,eval=T,include=F}
 #effort
-efforts<-fread(cmd = 'unzip -p ../data/efforts.csv.zip')
+efforts<-fread("./applications/statpeche/data/efforts.csv")
 #landings
-landings1<-fread(cmd = 'unzip -p ../data/landings_2011_2023.csv.zip')
-landings2<-fread(cmd = 'unzip -p ../data/landings_2000_2010.csv.zip')
+landings1<-fread('./applications/statpeche/data/landings_2011_2023.csv')
+landings2<-fread('./applications/statpeche/data/landings_2000_2010.csv')
 landings<-rbind(landings1,landings2)
 rm(landings1,landings2)
 
-refgear<-read.csv2("../data/REFERENTIEL_ENGINS.txt",fileEncoding="ISO-8859-1",sep="\t")
-refspp<-read.csv2("../data/REFERENTIEL_ESPECES.txt",fileEncoding="ISO-8859-1",sep="\t")
-refmet<-read.csv2("../data/REFERENTIEL_METIERS_DCF_6.txt",fileEncoding="ISO-8859-1",sep="\t")
-refport<-read.csv2("../data/REFERENTIEL_PORTS.txt",fileEncoding="ISO-8859-1",sep="\t")
-allgeo<-readRDS("../data/allgeo.rds")
+refgear<-read.csv2("./applications/statpeche/data/REFERENTIEL_ENGINS.txt",fileEncoding="ISO-8859-1",sep="\t")
+refspp<-read.csv2("./applications/statpeche/data/REFERENTIEL_ESPECES.txt",fileEncoding="ISO-8859-1",sep="\t")
+refmet<-read.csv2("./applications/statpeche/data/REFERENTIEL_METIERS_DCF_6.txt",fileEncoding="ISO-8859-1",sep="\t")
+refport<-read.csv2("./applications/statpeche/data/REFERENTIEL_PORTS.txt",fileEncoding="ISO-8859-1",sep="\t")
+allgeo<-readRDS("./applications/statpeche/data/allgeo.rds")
 ```
 
 ### Zone de l'étude
@@ -95,10 +95,12 @@ lanMUR<-lan %>% filter(taxon=="MUR")
 #combine par année et somme des débarquements
 lanmuryear<-lanMUR%>%
   group_by(year)%>%
-  summarise(w=sum(landWt/1000,na.rm=T))
+  summarise(w=sum(landWt/1000,na.rm=T),price=mean(landValue,na.rm=T))
 
 #plot
 ggplot(lanmuryear,aes(x=year,y=w))+geom_point()+geom_smooth(method="lm")
+#ggplot(lanmuryear,aes(x=year,y=price))+geom_point()+geom_smooth(method="lm")
+
 
 #analyse
 rez<-cor.test(lanmuryear$year,lanmuryear$w,method="spearman")
