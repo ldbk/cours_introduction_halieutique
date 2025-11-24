@@ -737,69 +737,30 @@ résolution du modèle.</p>
     RSS
 }
 
-################################################################################
-## South Atlantic albacore
+#verification
+#on simule une dynamique de population avec les NQMF
+simu1 &lt;- discretelogistic(r=2.4,K=200,N0=100,Ct=25,Yrs=100)
+plot(simu1)
+#simu1 contient les informations
+head(simu1)
+#on modifie simu1 pour qu&#39;il corresponde aux variables attendues
+#data0&lt;-data.frame(Year=simu1[,1],B=simu1[,2],Index=jitter(simu1[,2],amount=10)*0.4,Catch=rep(20,nrow(simu1)))
+data0&lt;-data.frame(Year=simu1[,1],B=simu1[,2],Index=simu1[,2]*1,Catch=rep(20,nrow(simu1)))
+paraminit &lt;- c(logr=log(0.5), logK=log(100), logBinit=log(80), logq=log(0.5))
+Schaefer(paraminit,simu1bis)
 
-albacore &lt;- read.table(&quot;albacore.dat&quot;, header=TRUE)
-init &lt;- c(logr=log(0.5), logK=log(200), logBinit=log(100), logq=log(0.5))
+est &lt;- optim(paraminit, Schaefer, data=data0)
+fit &lt;- Schaefer(est$par, data0, verbose=TRUE)
 
-Schaefer(par=init, albacore)
-optim(init, Schaefer, data=albacore)
-est &lt;- optim(init, Schaefer, data=albacore)$par
-fit &lt;- Schaefer(est, albacore, verbose=TRUE)
-
-par(mfrow=c(2,2))
-
-plot(albacore$Year, fit$Ifit, ylim=c(0,90), yaxs=&quot;i&quot;, type=&quot;l&quot;, lwd=4,
-     col=&quot;gray&quot;, xlab=&quot;Year&quot;, ylab=&quot;Biomass index&quot;,
-     main=&quot;Albacore: Fit to data&quot;)
-points(Index~Year, albacore)
-
-plot(albacore$Year, fit$B, type=&quot;l&quot;, ylim=c(0,300), yaxs=&quot;i&quot;, lwd=2,
-     xlab=&quot;Year&quot;, ylab=&quot;Biomass and catch&quot;, main=&quot;Albacore: Biomass and catch&quot;)
-points(Catch~Year, albacore, type=&quot;h&quot;, lwd=6)
-
-plot(albacore$Year, fit$HR, ylim=c(0,0.35), yaxs=&quot;i&quot;, type=&quot;l&quot;,
-     lwd=2, xlab=&quot;Year&quot;, ylab=&quot;Harvest rate&quot;, main=&quot;Albacore: Harvest rate&quot;)
-
-fit$pars
+exp(est$par)
 fit$refpts
 
-################################################################################
-## Georges Bank winter flounder
-
-flounder &lt;- read.table(&quot;flounder.dat&quot;, header=TRUE)
-
-K.init &lt;- 8 * mean(flounder$Catch)
-B.init &lt;- 0.5 * K.init
-q.init &lt;- flounder$Index[1] / B.init
-init &lt;- c(logr=log(0.5), logK=log(K.init),
-          logBinit=log(B.init), logq=log(q.init))
-
-Schaefer(par=init, flounder)
-optim(init, Schaefer, data=flounder)
-optim(init, Schaefer, data=flounder, method=&quot;Nelder-Mead&quot;,
-      control=list(maxit=1e5, reltol=1e-10))
-nlminb(init, Schaefer, data=flounder, control=list(eval.max=1e4, iter.max=1e4))
-est &lt;- nlminb(init, Schaefer, data=flounder,
-              control=list(eval.max=1e4, iter.max=1e4))$par
-fit &lt;- Schaefer(est, flounder, verbose=TRUE)
-
 par(mfrow=c(2,2))
-
-plot(flounder$Year, fit$Ifit, ylim=c(0,8), yaxs=&quot;i&quot;, lwd=4, col=&quot;gray&quot;,
-     type=&quot;l&quot;, xlab=&quot;Year&quot;, ylab=&quot;Biomass index&quot;, main=&quot;Flounder: Fit to data&quot;)
-points(Index~Year, flounder)
-
-plot(flounder$Year, fit$B, type=&quot;l&quot;, ylim=c(0,15), yaxs=&quot;i&quot;, lwd=2,
-     xlab=&quot;Year&quot;, ylab=&quot;Biomass and catch&quot;, main=&quot;Flounder: Biomass and catch&quot;)
-points(Catch~Year, flounder, type=&quot;h&quot;, lwd=6)
-
-plot(flounder$Year, fit$HR, ylim=c(0,0.6), yaxs=&quot;i&quot;, type=&quot;l&quot;,
-     lwd=2, xlab=&quot;Year&quot;, ylab=&quot;Harvest rate&quot;, main=&quot;Flounder: Harvest rate&quot;)
-
-t(fit$pars)
-t(fit$refpts)</code></pre>
+plot(data0$Year,fit$Ifit,main=&quot;Biomass Index&quot;,type=&quot;l&quot;)
+points(data0$Year,data0$Index,pch=&quot;x&quot;,type=&quot;l&quot;,col=&quot;blue&quot;)
+plot(data0$Year,fit$B,pch=&quot;x&quot;,type=&quot;l&quot;,main=&quot;Biomass estim&quot;)
+plot(data0$Year,data0$B,pch=&quot;x&quot;,type=&quot;l&quot;,main=&quot;Biomass ori&quot;)
+plot(data0$Year,fit$HR*fit$B,pch=&quot;x&quot;,type=&quot;l&quot;)</code></pre>
 </div>
 </div>
 <div class="footnotes footnotes-end-of-document">
