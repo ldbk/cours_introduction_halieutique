@@ -1,0 +1,32 @@
+#exemple filtre sur le rouget barbet
+lanspp<-lan %>% filter(taxon=="MUR")
+lansppyear<-lanspp%>%
+  group_by(year)%>%
+  summarise(i=sum(landWt/1000,na.rm=T))
+plot(lansppyear,type="l")
+#analyses rapides des metiers majoritaires ciblant la ou les espèces considérés
+#metier majoritaire
+lanspp%>%
+  group_by(substr(metier6,1,3))%>%
+  summarise(w=sum(landWt,na.rm=T)/1000)%>%
+  arrange(desc(w))
+#donc pour l'index biomasse on cible les metiers OTB
+index<-lanspp%>%filter(grepl("OTB|PTM",metier6))%>%
+  group_by(year)%>%
+  summarise(i=sum(landWt,na.rm=T))
+eff<-efforts%>%filter(grepl("OTB|PTM",metier6))%>%
+  group_by(year)%>%
+  summarise(eff=sum(daysAtSea,na.rm=T))
+lansppyear<-lanspp%>%
+  group_by(year)%>%
+  summarise(catch=sum(landWt,na.rm=T)/1000)
+plot(index$i/eff$eff,type="l")
+
+data0<-data.frame(year=lansppyear$year,catch=lansppyear$catch,cpue=index$i/eff$eff)
+library(MQMF)
+plotspmdat(data0)
+#ajustement
+params<-log(c(r=0.2,K=1000,Binit=500000,sigma=0.01))
+fit1 <- fitSPM(params,fish=data0,schaefer=TRUE,maxiter=1000)
+plotspmmod(fit1$estimate,data0)
+exp(fit1$estimate)
