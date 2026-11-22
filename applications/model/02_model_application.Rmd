@@ -146,6 +146,9 @@ min_residuals <- function(data, par) {
 }
 #test de la fonction avec les données simulées et avec a=1 et b=0
 min_residuals(df,c(1,0))
+min_residuals(df,c(1,0.5))
+min_residuals(df,c(1,1))
+min_residuals(df,c(0.76,1.97))
 #résultat: 13.5
 ```
 
@@ -314,7 +317,7 @@ head(simu1)
 #data0<-data.frame(Year=simu1[,1],B=simu1[,2],Index=jitter(simu1[,2],amount=10)*0.4,Catch=rep(20,nrow(simu1)))
 data0<-data.frame(Year=simu1[,1],B=simu1[,2],Index=simu1[,2]*1,Catch=rep(20,nrow(simu1)))
 paraminit <- c(logr=log(0.5), logK=log(100), logBinit=log(80), logq=log(0.5))
-Schaefer(paraminit,simu1bis)
+Schaefer(paraminit,data0)
 
 est <- optim(paraminit, Schaefer, data=data0)
 fit <- Schaefer(est$par, data0, verbose=TRUE)
@@ -324,6 +327,7 @@ fit$refpts
 
 par(mfrow=c(2,2))
 plot(data0$Year,fit$Ifit,main="Biomass Index",type="l")
+
 points(data0$Year,data0$Index,pch="x",type="l",col="blue")
 plot(data0$Year,fit$B,pch="x",type="l",main="Biomass estim")
 plot(data0$Year,data0$B,pch="x",type="l",main="Biomass ori")

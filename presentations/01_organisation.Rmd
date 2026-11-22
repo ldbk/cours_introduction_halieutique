@@ -11,6 +11,11 @@ linkcolor: blue
 urlcolor: blue
 ---
 
+```{r render,echo=FALSE,eval=F}
+#command to render the html outside Rstudio
+rmarkdown::render("01_organisation.Rmd",output_format="slidy_presentation",clean=T)
+```
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 ```

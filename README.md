@@ -1,3 +1,3 @@
 # cours_introduction_halieutique
 
-Cours introductif à l'halieutique, février 2025
+Cours introductif à l'halieutique M2 
