@@ -171,6 +171,9 @@ $presentation-heading-font: $font-family-sans-serif;
     gap: 1.5em;
   }
 
+  // tableaux étirés sur toute la largeur de leur colonne
+  .full-tables table { width: 100%; }
+
   .small { font-size: 0.75em; }
   .center-text { text-align: center; }
 }

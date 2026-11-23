@@ -189,12 +189,12 @@ cela qu'on l'appelle aussi « modèle global » [@gascuel2008].
 ::: {.column width="55%"}
 - **Capture** $C$ (ou $Y$) : biomasse prélevée par la pêche
 - **Effort de pêche** $E$ : quantité de pêche déployée (jours de mer, hameçons...)
-- **CPUE** (capture par unité d'effort) : $U = C / E$
+- **CPUE** (capture par unité d'effort) : $\text{CPUE} = C / E$
 - **Capturabilité** $q$ : part du stock capturée par une unité d'effort
 - **Mortalité par pêche** $F = qE$ : taux de prélèvement
 
 $$
-C = F\,B = q\,E\,B \quad\Rightarrow\quad U = \frac{C}{E} = q\,B
+C = F\,B = q\,E\,B \quad\Rightarrow\quad \text{CPUE} = \frac{C}{E} = q\,B
 $$
 :::
 ::: {.column width="45%"}
@@ -217,7 +217,7 @@ chalutage, d'hameçons posés. La capture par unité d'effort (CPUE, de l'anglai
 On suppose que chaque unité d'effort capture une fraction constante $q$ du
 stock : c'est la capturabilité. La mortalité par pêche $F = qE$ est alors
 proportionnelle à l'effort, et la capture vaut $C = qEB$. On en déduit que la
-CPUE est proportionnelle à la biomasse : $U = qB$.
+CPUE est proportionnelle à la biomasse : $\text{CPUE} = qB$.
 
 C'est fondamental, car on ne peut presque jamais mesurer directement la
 biomasse d'un stock. On dispose en revanche d'indices d'abondance : la CPUE
@@ -229,37 +229,96 @@ des poissons. Une CPUE stable peut ainsi masquer une baisse du stock si les
 pêcheurs deviennent plus efficaces.
 :::
 
-## Qu'est-ce qu'un modèle ?
+## Qu'est-ce qu'un modèle ? {.full-tables}
+
+Une **représentation simplifiée** d'un système, qui ne retient que les processus jugés essentiels. [*« Tous les modèles sont faux, mais certains sont utiles. »* (G. Box)]{.small}
+
+**1. Variables et paramètres** [(exemple : modèle de Schaefer à temps discret)]{.small}
 
 ::: {.columns}
-::: {.column width="55%"}
-- Une **représentation simplifiée** d'un système, qui retient les processus jugés essentiels
-- **Variables** : évoluent dans le temps ($B_t$, $C_t$)
-- **Paramètres** : constantes à estimer ($r$, $K$, $q$)
-- **Déterministe** ou **stochastique**, **continu** ou **discret**
-:::
 ::: {.column width="45%"}
-::: {.callout-box}
-« Tous les modèles sont faux, mais certains sont utiles. »
+$$
+B_{t+1} = B_t + r\,B_t\left(1 - \frac{B_t}{K}\right) - C_t
+$$
 
-G. Box
+::: {.needs-box .small}
+**Variable** : change avec le temps, porte l'indice $t$.<br>
+**Paramètre** : constant, sans indice, à estimer.
+:::
+:::
+::: {.column width="55%"}
+| Symbole | Nature | Signification |
+|---|---|---|
+| $B_t$ | **variable** (état) | biomasse l'année $t$, calculée par le modèle |
+| $C_t$ | **variable** (entrée) | captures l'année $t$, observées |
+| $r$ | **paramètre** | taux intrinsèque d'accroissement |
+| $K$ | **paramètre** | capacité de charge (biomasse vierge) |
+
+: {tbl-colwidths="[14,26,60]"}
+:::
 :::
 
-Un modèle qui n'inclut pas le climat ne suppose pas que le climat n'a pas d'effet : il raisonne dans des **conditions moyennes** [@gascuel2008].
+::: {.columns}
+::: {.column width="50%"}
+**2. Déterministe ou stochastique ?**
+
+| Déterministe | Stochastique |
+|---|---|
+| pas d'aléa | aléa : $[\ldots]\,e^{\varepsilon_t}$, $\varepsilon_t \sim \mathrm{N}(0, \sigma^2)$ |
+| mêmes $r$, $K$, $C_t$ ⇒ **une seule** trajectoire | une trajectoire **différente** à chaque simulation |
+
+: {tbl-colwidths="[50,50]"}
+:::
+::: {.column width="50%"}
+**3. Temps continu ou temps discret ?**
+
+| Temps continu | Temps discret |
+|---|---|
+| $\frac{dB}{dt} = r\,B\left(1 - \frac{B}{K}\right) - C$ | $B_t \rightarrow B_{t+1}$ (équation ci-dessus) |
+| la biomasse change à chaque instant | pas d'un an, adapté aux données annuelles |
+
+: {tbl-colwidths="[50,50]"}
 :::
 :::
 
 ::: {.notes}
 Un modèle est une représentation simplifiée de la réalité. Modéliser, c'est
 choisir les processus que l'on juge essentiels pour répondre à une question,
-et laisser les autres de côté.
+et laisser les autres de côté. Comme le disait le statisticien George Box,
+« tous les modèles sont faux, mais certains sont utiles ».
 
-On distingue les variables, qui évoluent dans le temps (la biomasse, les
-captures), et les paramètres, des constantes qui caractérisent le système et
-que l'on cherche à estimer (ici le taux de croissance $r$, la capacité de
-charge $K$, la capturabilité $q$). Un modèle peut être déterministe (une seule
-trajectoire possible) ou stochastique (avec de l'aléa), continu ou discret
-dans le temps.
+Prenons comme exemple l'équation du modèle de Schaefer à temps discret, que
+nous détaillerons plus loin : la biomasse de l'année suivante est égale à la
+biomasse de l'année en cours, plus la production biologique de l'année, moins
+les captures de l'année.
+
+Cette équation contient deux sortes de grandeurs. Les variables changent
+d'une année à l'autre : elles portent l'indice de temps $t$. La biomasse $B_t$
+est la variable d'état : c'est ce que le modèle calcule, année après année. Les
+captures $C_t$ sont une variable d'entrée : on les connaît par les statistiques
+de pêche et on les fournit au modèle. Les paramètres, eux, sont des constantes
+qui caractérisent le stock : le taux intrinsèque d'accroissement $r$ et
+la capacité de charge $K$. Ils ne portent pas d'indice de temps. On ne les connaît
+pas : il faudra les estimer à partir des données. Une règle simple pour les
+reconnaître : un symbole avec l'indice $t$ est une variable, un symbole sans
+indice est un paramètre. Quand on ajoutera l'équation d'observation, la
+capturabilité $q$ sera un paramètre de plus.
+
+Un modèle est déterministe si, pour des paramètres et des captures donnés, il
+produit toujours la même trajectoire : c'est le cas de l'équation ci-dessus.
+Il est stochastique s'il contient une part d'aléa. On peut par exemple
+multiplier la biomasse calculée par un terme aléatoire $e^{\varepsilon_t}$,
+où $\varepsilon_t$ suit une loi normale de moyenne nulle et d'écart-type
+$\sigma$. Ce terme représente les fluctuations de la production liées à
+l'environnement. Chaque simulation donne alors une trajectoire différente, et
+$\sigma$ devient un paramètre supplémentaire.
+
+Un modèle peut aussi être écrit en temps continu ou en temps discret. En
+temps continu, on décrit la vitesse de variation de la biomasse à chaque
+instant, par une équation différentielle $dB/dt$. En temps discret, on calcule
+la biomasse à intervalles réguliers, ici chaque année. Les données de pêche
+étant annuelles, c'est la forme discrète que l'on utilise en pratique, et
+celle que vous programmerez dans les TD.
 
 Comme le rappelle Didier Gascuel, ne pas inclure un facteur dans un modèle ne
 revient pas à nier son influence. Le modèle de Schaefer ne contient pas le
@@ -284,15 +343,39 @@ Les équations
 - **1838, Verhulst** : croissance **logistique** d'une population limitée par les ressources [@verhulst1838]
 - **1935, Graham** : la pêche est durable si elle prélève l'excédent de production ; celui-ci est maximal à la **moitié** de la capacité de charge [@graham1935]
 - **1954-1957, Schaefer** : un modèle ajustable aux données de **captures et d'effort**, appliqué au **thon albacore** du Pacifique Est [@schaefer1954; @scheafer1957]
+
+::: {.callout-box .small}
+**Milner B. Schaefer** (1912-1970), halieute américain, directeur scientifique de la Commission interaméricaine du thon tropical (IATTC). Son modèle fonde la notion de **rendement maximal durable** (MSY).
+:::
 :::
 ::: {.column width="45%"}
-::: {.callout-box}
-**Milner B. Schaefer** (1912-1970)
+**La croissance logistique de Verhulst**
 
-Halieute américain, directeur scientifique de la Commission interaméricaine du thon tropical (IATTC).
+$$
+\frac{dB}{dt} = r\,B\left(1 - \frac{B}{K}\right)
+$$
 
-Son modèle fonde la notion de **rendement maximal durable** (MSY).
-:::
+```{r}
+#| label: g-verhulst
+#| fig-width: 6
+#| fig-height: 4.2
+# Solution exacte de l'équation logistique en temps continu
+r0 <- 0.5; K0 <- 1000; B0 <- 20
+verhulst <- data.frame(t = seq(0, 20, length.out = 200))
+verhulst$B <- K0 / (1 + (K0 - B0) / B0 * exp(-r0 * verhulst$t))
+ggplot(verhulst, aes(t, B)) +
+  geom_hline(yintercept = K0, linetype = "dashed", colour = "grey50") +
+  geom_line(colour = ifr_bleu_fonce, linewidth = 1.4) +
+  annotate("text", x = 1, y = K0 * 1.06, label = "K", size = 6) +
+  annotate("text", x = 13, y = K0 * 0.55, label = "croissance freinée\npar la compétition",
+           size = 4.5, hjust = 0, colour = "grey30") +
+  annotate("text", x = 9.5, y = K0 * 0.3, label = "croissance\nrapide",
+           size = 4.5, hjust = 0, colour = "grey30") +
+  annotate("text", x = 0.3, y = K0 * 0.15, label = "démarrage\nlent",
+           size = 4.5, hjust = 0, colour = "grey30") +
+  scale_y_continuous(limits = c(0, K0 * 1.1)) +
+  labs(x = "Temps", y = "Biomasse B")
+```
 :::
 :::
 
@@ -314,6 +397,72 @@ Commission interaméricaine du thon tropical [@schaefer1954; @scheafer1957]. Le
 modèle devient alors l'outil de référence pour recommander des niveaux
 d'effort de pêche, et le rendement maximal durable (MSY) s'impose comme
 objectif de gestion.
+
+La figure illustre l'équation de Verhulst. La biomasse $B$ croît au rythme
+$r\,B(1 - B/K)$ : $r$ est le taux intrinsèque d'accroissement et $K$ la capacité
+de charge, la biomasse maximale que le milieu peut entretenir. Partie d'une
+faible biomasse, la population démarre lentement (peu de reproducteurs),
+croît ensuite rapidement, puis ralentit sous l'effet de la compétition et se
+stabilise à $K$. C'est la courbe en S caractéristique de la croissance
+logistique, que nous détaillerons dans la diapositive suivante.
+:::
+
+## Point de vocabulaire : $r$ et $K$
+
+::: {.columns}
+::: {.column width="50%"}
+::: {.callout-box}
+**$r$ : taux intrinsèque d'accroissement** de la population (en an^-1^)
+
+Productivité maximale du stock, atteinte quand il est très peu abondant : $r = \frac{1}{B}\frac{dB}{dt}$ quand $B \to 0$.
+:::
+
+- Terme consacré en français [@gascuel2008] ; en anglais *intrinsic rate of natural increase* [@birch1948]
+- À ne pas confondre avec la **croissance individuelle** des poissons : $r$ résume reproduction, croissance et mortalité naturelle
+:::
+::: {.column width="50%"}
+::: {.callout-box}
+**$K$ : capacité de charge** (ou capacité biotique) du milieu
+
+Biomasse d'équilibre du stock **non exploité**, ou **biomasse vierge** $B_0$.
+:::
+
+- En anglais *carrying capacity* ; « capacité biotique du milieu » chez @gascuel2008
+- C'est un **paramètre estimé** du modèle, pas une propriété mesurable du milieu ; il peut varier avec l'environnement [@chapman2018]
+:::
+:::
+
+::: {.notes}
+Avant d'aller plus loin, précisons le vocabulaire des deux paramètres du
+modèle logistique, car les termes varient selon les auteurs et les langues.
+
+Le paramètre $r$ est le taux intrinsèque d'accroissement de la population.
+C'est le terme employé dans les cours français de dynamique des populations
+[@gascuel2008]. Il vient de la démographie humaine (Lotka) et a été introduit
+en écologie par Birch, sous le nom d'*intrinsic rate of natural increase*
+[@birch1948]. Dans le modèle logistique, $r$ est la productivité maximale du
+stock : la production par tonne de biomasse quand le stock est très peu
+abondant, sans compétition. Il s'exprime en an$^{-1}$. Les cours anglophones
+de halieutique parlent souvent d'*intrinsic growth rate*, que l'on traduit
+parfois par « taux de croissance intrinsèque ». Cette traduction est à
+manier avec précaution : en halieutique, le mot « croissance » désigne
+d'abord la croissance individuelle des poissons, en taille ou en poids. Or $r$
+ne mesure pas la croissance des individus : il résume l'effet combiné de la
+reproduction, de la croissance individuelle et de la mortalité naturelle sur
+l'accroissement de la population. Notons enfin que le $r$ de Birch est défini
+pour une population à structure d'âge stable en milieu illimité ; le $r$ du
+modèle logistique est un paramètre plus simple, estimé à partir des données.
+
+Le paramètre $K$ est la capacité de charge du milieu (en anglais *carrying
+capacity*), appelée aussi capacité biotique du milieu [@gascuel2008] : c'est
+la biomasse maximale que le milieu peut entretenir durablement. Dans le modèle
+de Schaefer, il a un sens très concret : c'est la biomasse d'équilibre du
+stock en l'absence de pêche, que l'on appelle la biomasse vierge et que l'on
+note souvent $B_0$. Attention : $K$ est un paramètre du modèle, estimé à
+partir des données de captures et d'abondance, et non une propriété que l'on
+pourrait mesurer directement dans le milieu. La notion de capacité de charge
+est d'ailleurs utilisée de façon assez souple en écologie, et l'on sait
+qu'elle peut varier avec les conditions de l'environnement [@chapman2018].
 :::
 
 ## La croissance logistique
@@ -346,6 +495,7 @@ print(p2, vp = grid::viewport(layout.pos.row = 1, layout.pos.col = 2))
 
 $$
 \frac{dB}{dt} = r\,B\left(1 - \frac{B}{K}\right)
+\qquad \text{Exemple : } r = 0{,}5 \text{ an}^{-1}, \quad K = 1\,000, \quad B_1 = 20
 $$
 
 ::: {.notes}
@@ -358,8 +508,13 @@ Le paramètre $r$ est le taux intrinsèque d'accroissement : c'est la
 productivité du stock quand il est très peu abondant, sans compétition. Il est
 élevé pour les espèces à vie courte et à maturité précoce (sardine, anchois),
 faible pour les espèces longévives (requins, poissons profonds). Le paramètre
-$K$ est la capacité de charge (*carrying capacity*) : la biomasse maximale que
-le milieu peut entretenir, atteinte par le stock vierge.
+$K$ est la capacité de charge (*carrying capacity*) : la biomasse d'équilibre
+du stock non exploité, ou biomasse vierge.
+
+Les figures sont calculées avec un taux intrinsèque d'accroissement $r = 0{,}5$ par an,
+une capacité de charge $K = 1\,000$ (en unités de biomasse, par exemple des
+tonnes) et une biomasse initiale de 20, soit 2 % de $K$. La production
+maximale vaut alors $rK/4 = 125$, atteinte pour $B = K/2 = 500$.
 
 La figure de gauche montre la courbe en S typique : partie d'une faible
 biomasse, la population croît d'abord vite, puis ralentit et se stabilise à
@@ -388,10 +543,11 @@ ggplot(prod, aes(B, prodind)) +
 ::: {.column width="50%"}
 - La **productivité** par unité de biomasse **diminue linéairement** quand la biomasse augmente
 - Causes : compétition pour la nourriture et l'espace, croissance individuelle plus lente, cannibalisme, prédation...
-- Conséquence : **un stock pêché devient plus productif**
+- Conséquence : quand la pêche réduit la biomasse, la **productivité par unité de biomasse augmente**
+- Mais la **production totale** n'augmente que jusqu'à $K/2$, puis diminue
 
 ::: {.callout-box}
-C'est la **compensation** qui rend une pêche durable possible.
+C'est la **compensation**, une **hypothèse** du modèle, qui rend une pêche durable possible [@laurec1981; @rose2001].
 :::
 :::
 :::
@@ -405,13 +561,35 @@ $K$.
 C'est la densité-dépendance. Quand le stock est abondant, les individus sont en
 compétition pour la nourriture et l'espace : leur croissance ralentit, leur
 mortalité naturelle augmente, leur reproduction est moins efficace. Quand la
-pêche réduit l'abondance, cette compétition diminue et chaque individu devient
-plus productif.
+pêche réduit l'abondance, cette compétition diminue et chaque tonne de poisson
+restante produit davantage. Laurec et Le Guen décrivent quatre voies possibles
+pour cette compensation : le rajeunissement de la population (les jeunes sont
+plus productifs que les vieux), un meilleur recrutement par unité de biomasse
+féconde, une croissance individuelle plus rapide et une mortalité naturelle
+plus faible [@laurec1981]. Beverton et Holt en ont donné un exemple célèbre :
+pendant la Seconde Guerre mondiale, la pêche s'est arrêtée en mer du Nord, la
+densité des poissons a augmenté et leur croissance a ralenti.
+
+Attention à ne pas confondre productivité et production. La productivité, la
+production par tonne de stock, augmente toujours quand la biomasse diminue.
+La production totale, elle, est le produit de la productivité par la
+biomasse : elle augmente quand la pêche ramène le stock de $K$ vers $K/2$,
+puis diminue en dessous (figure b de la diapositive précédente). Un stock
+surexploité produit donc moins de tonnes, même si chaque tonne restante est
+plus productive. Pêcher davantage ne fait pas toujours produire plus.
 
 Cette compensation est la base biologique de l'exploitation durable. Sans
 elle, toute capture ferait baisser indéfiniment l'abondance. Grâce à elle, un
 stock réduit par la pêche peut se stabiliser à un niveau où sa production
 compense exactement les prélèvements.
+
+La compensation est une hypothèse, pas une loi. Elle est bien documentée,
+mais difficile à mesurer [@rose2001]. Elle a été démontrée pour la croissance
+individuelle, en comparant de nombreuses populations
+[@lorenzenDensitydependentGrowthKey2002]. Elle peut en revanche faire défaut
+quand le stock est très bas : beaucoup de stocks effondrés, comme la morue de
+Terre-Neuve, se reconstituent beaucoup plus lentement que ne le prédit le
+modèle, même après l'arrêt de la pêche [@hutchings2000].
 :::
 
 ## Le modèle de Schaefer
@@ -472,19 +650,26 @@ car on prélève moins que sa production.
 ```{r}
 #| label: g-chaos
 #| fig-width: 12
-#| fig-height: 4.8
+#| fig-height: 3.6
 d_chaos <- do.call(rbind, lapply(c(0.5, 1.8, 2.5, 2.9), function(rr)
   cbind(schaefer_sim(rr, 1000, 100, n = 40), r = paste("r =", rr))))
+# Sensibilité aux conditions initiales : même r = 2,9, départ à 101 au lieu de 100
+d_proche <- cbind(schaefer_sim(2.9, 1000, 101, n = 40), r = "r = 2.9")
 ggplot(d_chaos, aes(annee, B)) +
   geom_hline(yintercept = 1000, linetype = "dashed", colour = "grey60") +
+  geom_line(data = d_proche, colour = ifr_rouge, linewidth = 0.6) +
   geom_line(colour = ifr_bleu_fonce) +
   geom_point(colour = ifr_bleu_fonce, size = 1) +
   facet_wrap(~ r, nrow = 1) +
   labs(x = "Années", y = "Biomasse B")
 ```
 
+::: {.callout-box .small}
+**Chaos** : comportement d'un système **déterministe** (sans aucun aléa) dont la trajectoire est **irrégulière**, ne se répète jamais et reste bornée, et qui est **très sensible aux conditions initiales** : deux trajectoires qui partent de valeurs presque identiques finissent par diverger complètement. À r = 2,9, partir de 101 au lieu de 100 ([courbe rouge]{style="color:#D7263D"}) donne une autre trajectoire au bout de quelques années : la dynamique devient **imprévisible à long terme**.
+:::
+
 ::: {.small}
-Sans pêche, K = 1000. Au-delà de r ≈ 2, la biomasse oscille, puis devient chaotique [@may1976].
+Sans pêche, K = 1000, B~1~ = 100. Au-delà de r = 2, la biomasse oscille entre 2, 4, 8... valeurs, puis devient chaotique vers r ≈ 2,6 [@may1976].
 :::
 
 ::: {.notes}
@@ -495,6 +680,21 @@ oscille avant de se stabiliser. Au-delà de 2, elle oscille indéfiniment entre
 deux, quatre, huit valeurs... puis, vers $r = 2{,}6$ et au-delà, elle devient
 chaotique : la trajectoire semble aléatoire alors que le modèle est
 parfaitement déterministe.
+
+Que veut dire « chaotique » ? En mathématiques, le chaos désigne le
+comportement d'un système déterministe, c'est-à-dire sans aucune part de
+hasard, dont la trajectoire est pourtant irrégulière : elle reste dans des
+limites (ici, la biomasse ne part pas à l'infini), mais ne se répète jamais,
+contrairement aux oscillations régulières observées pour $r = 2{,}5$. Sa
+propriété essentielle est la sensibilité aux conditions initiales : deux
+trajectoires qui partent de valeurs presque identiques s'écartent de plus en
+plus, jusqu'à devenir sans rapport l'une avec l'autre. C'est le fameux « effet
+papillon » décrit par le météorologue Edward Lorenz. La courbe rouge le
+montre : avec $r = 2{,}9$, une biomasse initiale de 101 au lieu de 100, soit
+une différence de 1 %, donne au bout de quelques années une trajectoire
+complètement différente. Comme on ne connaît jamais exactement l'état
+initial d'un système réel, un système chaotique est imprévisible à long
+terme, bien qu'il obéisse à une équation parfaitement connue.
 
 Ces valeurs de $r$ sont irréalistes pour la plupart des stocks de poissons
 (on a souvent $r$ entre 0,1 et 1). Mais cet exemple rappelle qu'un modèle très
@@ -510,35 +710,49 @@ par la biomasse pour différentes valeurs de $r$.
 
 Le rendement maximal durable
 
-## À l'équilibre
+## À l'équilibre {.full-tables}
+
+À **mortalité par pêche constante** $F$, le stock tend vers un équilibre où **captures = production**.
 
 ::: {.columns}
-::: {.column width="55%"}
-À **mortalité par pêche constante** $F$, le stock tend vers un équilibre où **captures = production** :
+::: {.column width="51%"}
+**1. Biomasse d'équilibre** : production = captures, puis on divise par $B^*$
 
 $$
+\begin{aligned}
 r\,B^*\left(1 - \frac{B^*}{K}\right) = F\,B^*
-\;\Rightarrow\;
-B^* = K\left(1 - \frac{F}{r}\right)
+&\;\Rightarrow\; r\left(1 - \frac{B^*}{K}\right) = F \\
+&\;\Rightarrow\; B^* = K\left(1 - \frac{F}{r}\right)
+\end{aligned}
 $$
 
-**Capture équilibrée** :
+**2. Capture équilibrée** : une parabole en $F$
 
 $$
-C^* = F\,B^* = F\,K\left(1 - \frac{F}{r}\right)
+C^* = F\,B^* = K\,F - \frac{K}{r}\,F^2
 $$
 :::
-::: {.column width="45%"}
-**Points de référence** (on annule $\frac{dC^*}{dF}$) :
+::: {.column width="49%"}
+**3. Maximum de $C^*$** : on annule la dérivée
 
-| | Schaefer |
-|---|---|
-| $B_{MSY}$ | $K/2$ |
-| $F_{MSY}$ | $r/2$ |
-| $MSY$ | $rK/4$ |
-| $E_{MSY}$ | $r/(2q)$ |
+$$
+\frac{dC^*}{dF} = K - \frac{2K}{r}\,F = 0
+\;\Rightarrow\;
+F_{MSY} = \frac{r}{2}
+$$
 
-: {tbl-colwidths="[40,60]"}
+**4. Points de référence** : on remplace $F$ par $F_{MSY}$
+
+| | Calcul | Résultat | Exemple^\*^ |
+|---|---|---|---|
+| $F_{MSY}$ | étape 3 | $r/2$ | 0,25 an^-1^ |
+| $B_{MSY}$ | $K\left(1 - \frac{r/2}{r}\right)$ | $K/2$ | 500 t |
+| $MSY$ | $F_{MSY} \times B_{MSY}$ | $rK/4$ | 125 t/an |
+| $E_{MSY}$ | $F_{MSY}/q$ (car $F = qE$) | $r/(2q)$ | |
+
+: {tbl-colwidths="[15,40,20,25]"}
+
+[^\*^ $r = 0{,}5$ an^-1^, $K = 1\,000$ t ; $\frac{d^2C^*}{dF^2} = -\frac{2K}{r} < 0$ : c'est bien un maximum.]{.small}
 :::
 :::
 
@@ -550,11 +764,30 @@ résolvant cette égalité, on trouve la biomasse d'équilibre $B^* = K(1 - F/r)
 Elle diminue quand $F$ augmente et s'annule quand $F$ atteint $r$ : au-delà, le
 stock disparaît.
 
-La capture équilibrée est le produit de $F$ par $B^*$. C'est une parabole en
-$F$. En dérivant par rapport à $F$ et en annulant la dérivée, on trouve son
-maximum : la mortalité par pêche $F_{MSY} = r/2$, qui maintient le stock à
-$B_{MSY} = K/2$ et donne la capture maximale durable $MSY = rK/4$. Comme
-$F = qE$, l'effort correspondant est $E_{MSY} = r/(2q)$.
+Détaillons le calcul. À l'équilibre, la production $rB^*(1 - B^*/K)$ est
+égale aux captures $FB^*$. Comme la biomasse d'équilibre n'est pas nulle, on
+peut diviser les deux membres par $B^*$ : il reste $r(1 - B^*/K) = F$, d'où
+$1 - B^*/K = F/r$, puis $B^* = K(1 - F/r)$.
+
+La capture équilibrée est le produit de $F$ par $B^*$. En développant, on
+obtient $C^* = KF - (K/r)F^2$ : c'est une parabole en $F$, tournée vers le
+bas puisque le coefficient de $F^2$ est négatif. Son maximum se trouve là où
+la dérivée s'annule. La dérivée vaut $K - (2K/r)F$ ; elle est nulle pour
+$F = r/2$. La dérivée seconde, $-2K/r$, est négative : il s'agit bien d'un
+maximum. C'est la mortalité par pêche au MSY, $F_{MSY} = r/2$.
+
+Il suffit ensuite de remplacer $F$ par $r/2$ dans les formules précédentes.
+La biomasse d'équilibre devient $B_{MSY} = K(1 - 1/2) = K/2$ : le stock est
+maintenu à la moitié de sa biomasse vierge. La capture correspondante est
+$MSY = F_{MSY} \times B_{MSY} = (r/2)(K/2) = rK/4$. On retrouve la production
+maximale de la courbe logistique, ce qui est logique : à l'équilibre, la
+capture est égale à la production. Enfin, comme $F = qE$, l'effort
+correspondant est $E_{MSY} = F_{MSY}/q = r/(2q)$.
+
+Avec les valeurs de l'exemple de la croissance logistique ($r = 0{,}5$ par an
+et $K = 1\,000$ tonnes), on obtient $F_{MSY} = 0{,}25$ par an, soit un quart
+de la biomasse prélevé chaque année, $B_{MSY} = 500$ tonnes et un MSY de 125
+tonnes par an.
 
 Le TD 5 (`04_modele_ajustement_application`) détaille la démonstration de
 $B_{MSY}$ et du $MSY$ à partir de la forme continue du modèle. En français, on parle de
@@ -811,7 +1044,7 @@ Le modèle ajusté (ligne rouge) suit correctement la tendance de la CPUE
 observée (points bleus), malgré une variabilité d'une année à l'autre que le
 modèle ne cherche pas à reproduire.
 
-Les paramètres estimés sont un taux de croissance $r$ d'environ
+Les paramètres estimés sont un taux intrinsèque d'accroissement $r$ d'environ
 `r round(fit$r, 2)` et une capacité de charge $K$ d'environ `r round(fit$K)`
 milliers de tonnes. On en déduit un rendement maximal durable d'environ
 `r round(msy, 1)` milliers de tonnes par an, obtenu pour une biomasse de
@@ -823,6 +1056,96 @@ en 1967. Cette hypothèse, et le choix de la fonction à minimiser, influencent
 les résultats : d'autres études trouvent des valeurs un peu différentes sur
 ces mêmes données [@polacheck1993; @meyer1999]. Ces chiffres sont donc une
 illustration de la méthode, pas une évaluation officielle du stock.
+:::
+
+## Diagnostic : diagramme de Kobe
+
+::: {.columns}
+::: {.column width="52%"}
+```{r}
+#| label: g-kobe-schema
+#| fig-width: 6.4
+#| fig-height: 5.2
+ggplot() +
+  annotate("rect", xmin = 0, xmax = 1, ymin = 1, ymax = 2, fill = ifr_rouge, alpha = 0.25) +
+  annotate("rect", xmin = 1, xmax = 2, ymin = 0, ymax = 1, fill = "forestgreen", alpha = 0.25) +
+  annotate("rect", xmin = 0, xmax = 1, ymin = 0, ymax = 1, fill = ifr_jaune, alpha = 0.25) +
+  annotate("rect", xmin = 1, xmax = 2, ymin = 1, ymax = 2, fill = ifr_jaune, alpha = 0.25) +
+  geom_vline(xintercept = 1) + geom_hline(yintercept = 1) +
+  annotate("text", x = 0.5, y = 1.5, size = 5,
+           label = "surpêché\net surexploité") +
+  annotate("text", x = 1.5, y = 0.5, size = 5,
+           label = "bon état,\npêche durable") +
+  annotate("text", x = 0.5, y = 0.5, size = 5,
+           label = "surpêché,\nen reconstitution") +
+  annotate("text", x = 1.5, y = 1.5, size = 5,
+           label = "surexploité,\nva diminuer") +
+  scale_x_continuous(breaks = c(0, 1, 2), expand = c(0, 0)) +
+  scale_y_continuous(breaks = c(0, 1, 2), expand = c(0, 0)) +
+  labs(x = expression(B / B[MSY]), y = expression(F / F[MSY]))
+```
+:::
+::: {.column width="48%"}
+::: {.small}
+- $B$ : biomasse du stock une année donnée
+- $B_{MSY}$ : biomasse qui produit le MSY ($K/2$ chez Schaefer)
+- $F$ : mortalité par pêche ($F = C/B$)
+- $F_{MSY}$ : mortalité par pêche qui produit le MSY ($r/2$)
+:::
+
+| Couleur | État | Diagnostic |
+|---|---|---|
+| [vert]{style="color:forestgreen"} | $B \geq B_{MSY}$, $F \leq F_{MSY}$ | bon état, pêche durable |
+| [jaune]{style="color:#B8860B"} (bas) | $B < B_{MSY}$, $F \leq F_{MSY}$ | surpêché, en reconstitution |
+| [jaune]{style="color:#B8860B"} (haut) | $B \geq B_{MSY}$, $F > F_{MSY}$ | surexploité, va diminuer |
+| [rouge]{style="color:#D7263D"} | $B < B_{MSY}$, $F > F_{MSY}$ | surpêché et surexploité |
+
+: {tbl-colwidths="[22,40,38]"}
+
+[Format « quatre quadrants rouge-jaune-vert » adopté par les cinq organisations thonières à Kobe (Japon) en 2007 [@tunarfmo2007; @maunder2011].]{.small}
+:::
+:::
+
+::: {.notes}
+Le diagramme de Kobe est l'outil standard pour présenter l'état d'un stock aux
+gestionnaires. Il tire son nom de la ville japonaise de Kobe, où s'est tenue
+en janvier 2007 la première réunion conjointe des cinq organisations
+régionales de gestion des pêches thonières. Ces organisations ont décidé d'y
+présenter de la même façon les résultats de leurs évaluations, sous la forme
+d'un graphique en « quatre quadrants rouge-jaune-vert » [@tunarfmo2007;
+@maunder2011]. Il est aujourd'hui utilisé bien au-delà des thons.
+
+Rappelons les grandeurs utilisées. $B$ est la biomasse du stock une année
+donnée, estimée par le modèle. $B_{MSY}$ est la biomasse qui permet d'obtenir
+le rendement maximal durable : dans le modèle de Schaefer, elle vaut la
+moitié de la biomasse vierge, $K/2$. $F$ est la mortalité par pêche de
+l'année, que l'on calcule ici comme le rapport des captures à la biomasse.
+$F_{MSY}$ est la mortalité par pêche qui conduit au MSY, soit $r/2$ dans le
+modèle de Schaefer.
+
+L'axe horizontal porte le rapport $B/B_{MSY}$, l'axe vertical le rapport
+$F/F_{MSY}$. Les deux lignes tracées à 1 découpent le graphique en quatre
+quadrants. Deux mots de vocabulaire sont importants. Un stock est dit
+surpêché (en anglais *overfished*) quand sa biomasse est inférieure à
+$B_{MSY}$ : c'est un constat sur l'état du stock. Il est dit surexploité, ou
+en situation de surpêche (*overfishing*), quand la mortalité par pêche
+dépasse $F_{MSY}$ : c'est un constat sur la pression de pêche actuelle.
+
+Le quadrant vert, en bas à droite, est la situation souhaitable : le stock est
+abondant et la pression de pêche est soutenable. Le quadrant rouge, en haut à
+gauche, est la pire situation : le stock est trop bas et la pêche continue de
+trop prélever. Les deux quadrants jaunes sont des situations intermédiaires,
+de sens très différent. En bas à gauche, le stock est encore trop bas, mais la
+pression de pêche a été réduite : il est en voie de reconstitution. En haut à
+droite, le stock est encore abondant, mais la pêche est trop forte : si rien
+ne change, il va diminuer et passer dans le quadrant rouge.
+
+On trace en général la trajectoire du stock année après année. Un stock
+commence souvent en bas à droite au début de la pêcherie, passe en haut à
+gauche quand il devient surexploité, puis, si une gestion adaptée est mise en
+place, revient tourner autour du centre du graphique [@maunder2011]. Ces
+estimations sont incertaines, et l'on représente souvent l'incertitude sur la
+position de la dernière année.
 :::
 
 ## Diagnostic : l'état du stock
@@ -1061,8 +1384,8 @@ Les modèles « espace d'états » distinguent deux sources d'incertitude :
 l'erreur de processus, qui représente la variabilité réelle de la dynamique du
 stock (une bonne ou une mauvaise année), et l'erreur d'observation, liée au
 bruit des indices d'abondance. Les approches bayésiennes permettent en outre
-d'intégrer des connaissances préalables, par exemple sur le taux de croissance
-d'espèces proches [@meyer1999].
+d'intégrer des connaissances préalables, par exemple sur le taux intrinsèque
+d'accroissement d'espèces proches [@meyer1999].
 
 SPiCT (*Stochastic surplus Production model in Continuous Time*) est un modèle
 espace d'états en temps continu, qui peut utiliser plusieurs indices
@@ -1086,7 +1409,7 @@ retrouvent dans tous ces modèles.
 
 ::: {.incremental}
 - Le modèle de Schaefer décrit la **biomasse totale** d'un stock avec deux paramètres biologiques : $r$ et $K$
-- La **densité-dépendance** rend une pêche durable possible : un stock pêché est plus productif
+- La **densité-dépendance** rend une pêche durable possible : un stock pêché est plus productif **par unité de biomasse** (compensation)
 - À l'équilibre : $MSY = rK/4$, $B_{MSY} = K/2$, $F_{MSY} = r/2$
 - Au-delà de $F_{MSY}$, **plus d'effort donne moins de captures** à long terme
 - On l'ajuste à une série de **captures** et d'**indice d'abondance** en minimisant l'écart entre indice observé et prédit
@@ -1124,7 +1447,7 @@ Les TD suivent la progression de ce cours.
 Le TD 4 (`applications/04_modele_theorie_application.qmd`) vous fait
 programmer le modèle vous-même : d'abord une année de dynamique à la main,
 puis une fonction, puis des trajectoires sur plusieurs dizaines d'années. Vous
-y explorez l'effet du taux de croissance $r$ (vitesse de reconstitution, puis
+y explorez l'effet du taux intrinsèque d'accroissement $r$ (vitesse de reconstitution, puis
 oscillations et chaos quand $r$ dépasse 2) et de la capacité de charge $K$
 (simple facteur d'échelle). Vous y testez enfin des captures constantes, pour
 retrouver que le MSY est la plus grande capture soutenable et découvrir

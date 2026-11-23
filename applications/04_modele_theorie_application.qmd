@@ -21,12 +21,12 @@ execute:
 # Objectifs et consignes {.unnumbered}
 
 Ce TD accompagne le cours « Le modèle de production de Schaefer ». Vous allez
-**programmer le modèle**, puis **jouer avec ses paramètres** pour comprendre
+**programmer le modèle**, puis **explorer l'effet de ses paramètres** pour comprendre
 la dynamique d'une population exploitée :
 
 1. calculer une année de dynamique à la main, puis avec une fonction ;
 2. simuler une trajectoire sur plusieurs dizaines d'années ;
-3. explorer l'effet du taux de croissance $r$ et de la capacité de charge $K$ ;
+3. explorer l'effet du taux intrinsèque d'accroissement $r$ et de la capacité de charge $K$ ;
 4. tester l'effet de captures constantes et retrouver le rendement maximal durable.
 
 **Durée** : environ 1 h 15.
@@ -57,8 +57,8 @@ $$
 | $t$ | année | |
 | $B_t$ | **biomasse** du stock l'année $t$ | t |
 | $B_0$ | biomasse initiale (au début de la simulation) | t |
-| $r$ | **taux intrinsèque d'accroissement** : productivité du stock quand il est très peu abondant | an^-1^ |
-| $K$ | **capacité de charge** : biomasse maximale que le milieu peut entretenir (stock vierge) | t |
+| $r$ | **taux intrinsèque d'accroissement** : productivité maximale du stock, quand il est très peu abondant | an^-1^ |
+| $K$ | **capacité de charge** : biomasse d'équilibre du stock non exploité (biomasse vierge $B_0$) | t |
 | $C_t$ | **captures** de l'année $t$ | t |
 | $r\,B_t(1 - B_t/K)$ | **production biologique** (ou production excédentaire) de l'année | t |
 
@@ -141,7 +141,7 @@ simuler <- function(B0, r, K, C = 0, n = 50) {
 traj <- simuler(B0 = 100, r = 0.5, K = 1000)
 ggplot(traj, aes(annee, B)) +
   geom_hline(yintercept = c(500, 1000), linetype = c("dotted", "dashed")) +
-  geom_line(colour = "#0032C8", linewidth = 1) +
+  geom_line(colour = "blue3", linewidth = 1) +
   labs(x = "Années", y = "Biomasse (t)", title = "r = 0,5 ; K = 1000 t ; sans pêche") +
   theme_minimal()
 ```
@@ -186,9 +186,9 @@ d'utiliser ces colonnes pour la couleur, par exemple
 
 *(commentez ici)*
 
-# Jouer avec r et K
+# Explorer l'effet de r et K
 
-## Effet du taux de croissance r
+## Effet du taux intrinsèque d'accroissement r
 
 ### À vous
 

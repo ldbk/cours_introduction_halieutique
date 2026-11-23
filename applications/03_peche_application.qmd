@@ -173,6 +173,23 @@ Répondez aux questions suivantes par du code **et** par une phrase.
 ```{r}
 #| label: avous-explorer
 # votre code ici
+range(lan$year)
+length(unique(lan$faocode))
+listrectgeo<-unique(rect$offname)
+listrectlan<-unique(lan_rect$icesrect)
+
+reponse<-listrectlan %in% listrectgeo
+reponse
+!reponse
+listrectlan
+listrectlan[1:3]
+
+
+listrectlan[reponse]
+listrectlan[!reponse]
+
+
+listrectlan[listrectlan]
 
 ```
 

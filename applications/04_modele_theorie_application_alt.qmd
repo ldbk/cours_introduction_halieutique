@@ -1,0 +1,478 @@
+---
+title: "TD 4 — Explorer le modèle de production de Schaefer (correction)"
+subtitle: "Introduction à l'halieutique — M2 Sciences de la Mer"
+author: "Laurent Dubroca"
+date: today
+lang: fr
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    number-sections: true
+    embed-resources: true
+    code-tools: true
+    theme: cosmo
+execute:
+  echo: true
+  warning: false
+  message: false
+---
+
+# Objectifs et consignes {.unnumbered}
+
+Ce TD accompagne le cours « Le modèle de production de Schaefer ». Vous allez
+**programmer le modèle**, puis **explorer l'effet de ses paramètres** pour comprendre
+la dynamique d'une population exploitée :
+
+1. calculer une année de dynamique à la main, puis avec une fonction ;
+2. simuler une trajectoire sur plusieurs dizaines d'années ;
+3. explorer l'effet du taux intrinsèque d'accroissement $r$ et de la capacité de charge $K$ ;
+4. tester l'effet de captures constantes et retrouver le rendement maximal durable.
+
+**Durée** : environ 1 h 27.
+
+**Rendu** : ce document complété (`.qmd` **et** `.html`), à envoyer par mail à
+l'intervenant à la fin de la demi-journée. Il est noté. Commentez vos
+résultats à la place de *(commentez ici)*.
+
+```{r}
+#| label: packages
+if (!requireNamespace("ggplot2", quietly = TRUE)) {
+    install.packages("ggplot2")
+}
+library(ggplot2)
+```
+
+# Rappels : le modèle et ses termes
+
+Le modèle de Schaefer décrit l'évolution de la **biomasse totale** d'un stock,
+sans distinguer les âges. Sa forme annuelle (temps discret) s'écrit :
+
+$$
+B_{t+1} = B_t + \underbrace{r\,B_t\left(1 - \frac{B_t}{K}\right)}_{\text{production biologique}} - C_t
+$$
+
+| Terme | Signification | Unité |
+|---|---|---|
+| $t$ | année | |
+| $B_t$ | **biomasse** du stock l'année $t$ | t |
+| $B_0$ | biomasse initiale (au début de la simulation) | t |
+| $r$ | **taux intrinsèque d'accroissement** : productivité maximale du stock, quand il est très peu abondant | an^-1^ |
+| $K$ | **capacité de charge** : biomasse d'équilibre du stock non exploité (biomasse vierge $B_0$) | t |
+| $C_t$ | **captures** de l'année $t$ | t |
+| $r\,B_t(1 - B_t/K)$ | **production biologique** (ou production excédentaire) de l'année | t |
+
+: Les termes du modèle
+
+Le facteur $(1 - B_t/K)$ traduit la **densité-dépendance** : plus le stock est
+abondant, plus la compétition freine sa croissance. Sans pêche, la biomasse
+tend vers $K$. La production est maximale pour $B = K/2$, où elle vaut
+$rK/4$ : c'est le **rendement maximal durable** (MSY), et $B_{MSY} = K/2$.
+
+# Une année de dynamique
+
+## À la main
+
+Prenons $B_t = 10$ t, $r = 0{,}2$, $K = 100$ t et $C_t = 1$ t.
+
+```{r}
+#| label: main
+10 + 0.2 * 10 * (1 - 10 / 100) - 1
+```
+
+La production de l'année vaut $0{,}2 \times 10 \times 0{,}9 = 1{,}8$ t ; on
+en prélève 1 t, le stock gagne donc 0,8 t.
+
+### À vous
+
+1. Recalculez $B_{t+1}$ avec $r = 0{,}5$ (les autres valeurs inchangées). Puis
+   avec $r = 0{,}5$ et $K = 10$. Expliquez le dernier résultat.
+2. Avec $r = 0{,}2$, $K = 100$ et une capture de **5 t par an**, calculez la
+   biomasse sur trois années successives à partir de $B_0 = 10$ t. Que se
+   passe-t-il ?
+
+```{r}
+#| label: avous-main
+# votre code ici
+
+```
+
+*(commentez ici)*
+
+## Une fonction pour une année
+
+Pour ne pas réécrire la formule, on l'enferme dans une **fonction**.
+
+On définit une fonction `biomasse_suivante(B, r, K, C)` qui renvoie $B_{t+1}$.
+Pour éviter une biomasse négative, la fonction renvoie une valeur nulle si la
+biomasse est négatice avec `max(..., 0)`.
+
+
+```{r}
+#| label: def-fonction
+biomasse_suivante <- function(B, r, K, C = 0) {
+    max(B + r * B * (1 - B / K) - C, 0)
+}
+```
+
+### À vous
+
+1. Vérifiez qu'elle donne 10,8 pour l'exemple ci-dessus. 
+2. Recalculez $B_{t+1}$ avec $r = 0{,}5$ (les autres valeurs inchangées). Puis
+   avec $r = 0{,}5$ et $K = 10$. Expliquez le dernier résultat.
+3. Avec $r = 0{,}2$, $K = 100$ et une capture de **5 t par an**, calculez la
+   biomasse sur trois années successives à partir de $B_0 = 10$ t. Que se
+   passe-t-il ?
+
+```{r}
+#| label: def-main
+# votre code ici
+
+```
+
+# Simuler une trajectoire
+
+En appliquant la fonction année après année, on obtient une trajectoire. La
+fonction `simuler()` ci-dessous le fait pour vous : elle renvoie un tableau
+avec les années, la biomasse et les valeurs de $r$, $K$ et $C$ utilisées.
+Pour comparer plusieurs scénarios, on les simule un par un, puis on
+**empile** les tableaux avec `rbind()` pour les tracer ensemble.
+
+```{r}
+#| label: simuler
+# on rappelle la fonction biomasse_suivante pour des histoires de non confusion
+biomasse_suivante <- function(B, r, K, C = 0) {
+    max(B + r * B * (1 - B / K) - C, 0)
+}
+simuler <- function(B0, r, K, C = 0, n = 50) {
+    B <- numeric(n)
+    B[1] <- B0
+    for (t in 1:(n - 1)) {
+        B[t + 1] <- biomasse_suivante(B[t], r, K, C)
+    }
+    data.frame(annee = 1:n, B = B, r = r, K = K, C = C)
+}
+
+traj <- simuler(B0 = 100, r = 0.5, K = 1000)
+ggplot(traj, aes(annee, B)) +
+    geom_hline(yintercept = c(500, 1000), linetype = c("dotted", "dashed")) +
+    geom_line(colour = "blue3", linewidth = 1) +
+    labs(x = "Années", y = "Biomasse (t)", title = "r = 0,5 ; K = 1000 t ; sans pêche") +
+    theme_minimal()
+```
+
+Partie de 100 t, la biomasse croît d'abord vite, puis ralentit et se stabilise
+à $K$ : c'est la courbe **logistique**, en forme de S.
+
+Nous allons comparer deux courbes avec des paramètres différents et les
+afficher sur le même graphique.
+
+Exemple de comparaison de deux scénarios :
+
+```{r}
+#| label: exemple-rbind
+s1 <- simuler(B0 = 100, r = 0.5, K = 1000)
+s2 <- simuler(B0 = 500, r = 0.5, K = 1000)
+deux <- rbind(s1, s2) # empile les deux tableaux
+deux$depart <- factor(rep(c("B0 = 100", "B0 = 500"), each = 50))
+ggplot(deux, aes(annee, B, colour = depart)) +
+    geom_line(linewidth = 1) +
+    labs(x = "Années", y = "Biomasse (t)", colour = NULL) +
+    theme_minimal()
+```
+
+Pour distinguer des scénarios qui diffèrent par $r$, $K$ ou $C$, il suffit
+d'utiliser ces colonnes pour la couleur, par exemple
+`aes(colour = factor(r))`.
+
+## La production en fonction de la biomasse
+
+### À vous
+
+1. Tracez la production $r\,B(1 - B/K)$ pour $B$ allant de 0 à $K$, avec
+   $r = 0{,}5$ et $K = 1000$.
+2. Pour quelle biomasse est-elle maximale, et que vaut ce maximum ? Comparez
+   avec $K/2$ et $rK/4$.
+3. Superposez la courbe pour $r = 1$ : qu'est-ce qui change, qu'est-ce qui ne
+   change pas ?
+
+```{r}
+i #| label: avous-production
+# votre code ici
+```
+
+*(commentez ici)*
+
+::: {.callout-tip collapse="true"}
+## Solution
+
+```{r}
+#| label: solution-production
+B <- seq(0, 1000, by = 5)
+prod <- rbind(
+    data.frame(B = B, P = 0.5 * B * (1 - B / 1000), r = "r = 0,5"),
+    data.frame(B = B, P = 1.0 * B * (1 - B / 1000), r = "r = 1")
+)
+ggplot(prod, aes(B, P, colour = r)) +
+    geom_line(linewidth = 1) +
+    geom_vline(xintercept = 500, linetype = "dotted") +
+    labs(x = "Biomasse (t)", y = "Production (t/an)", colour = NULL) +
+    theme_minimal()
+
+p05 <- prod[prod$r == "r = 0,5", ]
+p05[which.max(p05$P), ] # B = 500 = K/2 ; P = 125 = rK/4
+```
+
+La production est une parabole, maximale à $B = K/2 = 500$ t, où elle vaut
+$rK/4 = 125$ t. Doubler $r$ double la production à toutes les biomasses (et
+donc le MSY), mais le maximum reste à $K/2$ : dans le modèle de Schaefer,
+$B_{MSY}$ ne dépend que de $K$.
+:::
+
+# Explorer l'effet de r et K
+
+## Effet du taux intrinsèque d'accroissement r
+
+### À vous
+
+1. Sans pêche, à partir de $B_0 = 100$ t et avec $K = 1000$ t, simulez la
+   trajectoire pour $r$ = 0,2 ; 0,5 ; 1 et 1,8. Représentez-les sur un même
+   graphique.
+2. Combien d'années faut-il pour atteindre 95 % de $K$ dans chaque cas ?
+   Quelles espèces pourraient correspondre à un $r$ faible ou élevé ?
+
+```{r}
+#| label: avous-r
+# votre code ici
+
+```
+
+*(commentez ici)*
+
+::: {.callout-tip collapse="true"}
+## Solution
+
+```{r}
+#| label: solution-r
+t1 <- simuler(100, r = 0.2, K = 1000, n = 40)
+t2 <- simuler(100, r = 0.5, K = 1000, n = 40)
+t3 <- simuler(100, r = 1, K = 1000, n = 40)
+t4 <- simuler(100, r = 1.8, K = 1000, n = 40)
+trajs <- rbind(t1, t2, t3, t4)
+ggplot(trajs, aes(annee, B, colour = factor(r))) +
+    geom_hline(yintercept = 1000, linetype = "dashed") +
+    geom_line(linewidth = 1) +
+    labs(x = "Années", y = "Biomasse (t)", colour = "r") +
+    theme_minimal()
+
+# première année où l'on atteint 95 % de K (950 t)
+which(t1$B >= 950)[1]
+which(t2$B >= 950)[1]
+which(t3$B >= 950)[1]
+which(t4$B >= 950)[1]
+```
+
+Plus $r$ est élevé, plus le stock se reconstitue vite : environ 27 ans pour
+$r = 0{,}2$, contre 4 ans pour $r = 1{,}8$. Un $r$ faible correspond à des
+espèces longévives et à maturité tardive (requins, poissons profonds, grands
+gadidés), un $r$ élevé à des espèces à vie courte (sardine, anchois,
+calmars). Pour $r = 1{,}8$, la biomasse dépasse légèrement $K$ avant de s'y
+stabiliser.
+:::
+
+## Quand r devient très grand : oscillations et chaos
+
+### À vous
+
+1. Simulez 100 ans sans pêche ($B_0 = 100$, $K = 1000$) pour $r$ = 2,2 ;
+   2,5 et 2,9. Que se passe-t-il ?
+2. Pour chaque valeur, comptez le nombre de valeurs **distinctes** prises par
+   la biomasse pendant les 50 dernières années (`length(unique(round(...)))`).
+
+```{r}
+#| label: avous-chaos
+# votre code ici
+
+```
+
+*(commentez ici)*
+
+::: {.callout-tip collapse="true"}
+## Solution
+
+```{r}
+#| label: solution-chaos
+c1 <- simuler(100, r = 2.2, K = 1000, n = 100)
+c2 <- simuler(100, r = 2.5, K = 1000, n = 100)
+c3 <- simuler(100, r = 2.9, K = 1000, n = 100)
+trajs <- rbind(c1, c2, c3)
+ggplot(trajs, aes(annee, B)) +
+    geom_line(colour = "blue3") +
+    geom_point(colour = "blue3", size = 0.8) +
+    facet_wrap(~r, ncol = 1, labeller = label_both) +
+    labs(x = "Années", y = "Biomasse (t)") +
+    theme_minimal()
+
+# nombre de valeurs distinctes pendant les 50 dernières années
+length(unique(round(tail(c1$B, 50))))
+length(unique(round(tail(c2$B, 50))))
+length(unique(round(tail(c3$B, 50))))
+```
+
+Pour $r = 2{,}2$, la biomasse oscille indéfiniment entre **2** valeurs ; pour
+$r = 2{,}5$, entre **4** valeurs ; pour $r = 2{,}9$, elle ne se répète plus :
+la dynamique est **chaotique**, alors que le modèle est parfaitement
+déterministe. C'est le résultat célèbre de Robert May (1976, *Nature*). Ces
+valeurs de $r$ sont irréalistes pour la plupart des poissons, mais elles
+montrent qu'un modèle très simple peut produire des fluctuations complexes.
+:::
+
+## Effet de la capacité de charge K
+
+### À vous
+
+Simulez la trajectoire sans pêche avec $r = 0{,}5$, $B_0 = 50$ t et $K$ = 500,
+1000 et 2000 t. Tracez ensuite $B/K$ au lieu de $B$. Que constatez-vous ?
+
+```{r}
+#| label: avous-K
+# votre code ici
+
+```
+
+*(commentez ici)*
+
+::: {.callout-tip collapse="true"}
+## Solution
+
+```{r}
+#| label: solution-K
+k1 <- simuler(50, r = 0.5, K = 500, n = 40)
+k2 <- simuler(50, r = 0.5, K = 1000, n = 40)
+k3 <- simuler(50, r = 0.5, K = 2000, n = 40)
+trajs <- rbind(k1, k2, k3)
+ggplot(trajs, aes(annee, B, colour = factor(K))) +
+    geom_line(linewidth = 1) +
+    labs(x = "Années", y = "Biomasse (t)", colour = "K") +
+    theme_minimal()
+ggplot(trajs, aes(annee, B / K, colour = factor(K))) +
+    geom_line(linewidth = 1) +
+    labs(x = "Années", y = "B / K", colour = "K") +
+    theme_minimal()
+```
+
+$K$ fixe le **niveau** d'équilibre, mais pas la vitesse : $r$ détermine la
+dynamique. En partant de 50 t, le stock le plus grand ($K = 2000$) part d'une
+fraction plus faible de sa capacité et met un peu plus longtemps à
+l'atteindre. Si l'on part de la même **fraction** $B_0/K$, les trajectoires
+de $B/K$ sont identiques : $K$ n'est qu'un facteur d'échelle.
+:::
+
+# Ajouter la pêche : captures constantes
+
+On fixe maintenant $r = 0{,}4$ et $K = 1000$ t, donc $MSY = rK/4 = 100$ t
+par an et $B_{MSY} = 500$ t. Le stock part de l'état vierge ($B_0 = K$) et
+subit chaque année la même capture $C$.
+
+## À vous
+
+1. Simulez 100 ans avec $C$ = 80, 100 et 110 t. Que devient le stock ?
+2. Sur 300 ans, testez les captures $C$ = 99, 100 et 101 t : regardez la
+   biomasse de la dernière année avec `tail(..., 1)`. Quelle est la plus
+   grande capture constante soutenable ? Comparez-la au MSY.
+3. Avec $C = 80$ t, partez maintenant de $B_0 = 300$ t, puis de
+   $B_0 = 250$ t. Comment l'expliquer ? (Indice : cherchez les biomasses où
+   la production est égale à 80.)
+
+```{r}
+#| label: avous-captures
+# votre code ici
+
+```
+
+*(commentez ici)*
+
+::: {.callout-tip collapse="true"}
+## Solution
+
+```{r}
+#| label: solution-captures
+# 1. trois niveaux de capture
+p1 <- simuler(1000, r = 0.4, K = 1000, C = 80, n = 100)
+p2 <- simuler(1000, r = 0.4, K = 1000, C = 100, n = 100)
+p3 <- simuler(1000, r = 0.4, K = 1000, C = 110, n = 100)
+trajs <- rbind(p1, p2, p3)
+ggplot(trajs, aes(annee, B, colour = factor(C))) +
+    geom_hline(yintercept = 500, linetype = "dotted") +
+    geom_line(linewidth = 1) +
+    labs(x = "Années", y = "Biomasse (t)", colour = "Capture (t)") +
+    theme_minimal()
+
+# 2. biomasse finale après 300 ans pour trois captures
+tail(simuler(1000, r = 0.4, K = 1000, C = 99, n = 300)$B, 1)
+tail(simuler(1000, r = 0.4, K = 1000, C = 100, n = 300)$B, 1)
+tail(simuler(1000, r = 0.4, K = 1000, C = 101, n = 300)$B, 1)
+
+# 3. même capture, stock de départ plus faible
+tail(simuler(300, 0.4, 1000, C = 80, n = 200)$B, 1)
+tail(simuler(250, 0.4, 1000, C = 80, n = 200)$B, 1)
+# biomasses où la production vaut 80 t : solutions de 0.4 B (1 - B/1000) = 80
+ecart <- sqrt(1 - 4 * 80 / (0.4 * 1000))
+500 * (1 - ecart) # équilibre instable, environ 276 t
+500 * (1 + ecart) # équilibre stable, environ 724 t
+# vérification : la production vaut bien 80 t en ces points
+0.4 * 276 * (1 - 276 / 1000)
+```
+
+Une capture de 80 t, inférieure au MSY, est soutenable : le stock se
+stabilise vers 724 t. Une capture égale au MSY fait tendre le stock, très
+lentement, vers $B_{MSY} = 500$ t. Une capture de 110 t, à peine supérieure,
+conduit à l'**effondrement** en une quarantaine d'années. La plus grande
+capture constante soutenable est donc égale au **MSY** (100 t) : aucun stock
+ne peut produire durablement davantage.
+
+Avec $C = 80$ t, il existe **deux équilibres**, où la production égale la
+capture : 724 t (stable) et 276 t (**instable**). Au-dessus de 276 t, la
+production dépasse la capture et le stock remonte ; en dessous, la capture
+dépasse la production et le stock s'effondre. Un niveau de capture qui serait
+durable pour un stock en bonne santé peut donc achever un stock déjà
+surexploité : d'où la nécessité de réduire les captures quand la biomasse est
+basse.
+:::
+
+# Synthèse
+
+En quelques phrases, répondez :
+
+1. Quel est le rôle de $r$ ? Celui de $K$ ?
+2. Pourquoi un stock pêché peut-il être plus productif qu'un stock vierge ?
+3. Pourquoi est-il dangereux de fixer une capture constante proche du MSY ?
+
+*(rédigez ici)*
+
+::: {.callout-tip collapse="true"}
+## Solution
+
+1. $r$ règle la **vitesse** de la dynamique (reconstitution, productivité) ;
+   $K$ fixe le **niveau** de biomasse que le milieu peut entretenir.
+2. Grâce à la densité-dépendance : quand la biomasse diminue, la compétition
+   baisse et la production augmente, jusqu'à son maximum à $K/2$.
+3. Parce que le MSY est la limite exacte de ce que le stock peut produire :
+   la moindre surestimation de $r$ ou de $K$, ou une mauvaise année,
+   conduit à l'effondrement. Et une capture fixe ne s'adapte pas quand le
+   stock diminue, contrairement à une mortalité par pêche fixe.
+:::
+
+::: {.callout-note}
+## Pour aller plus loin
+
+Le package **MQMF** (Haddon 2020), utilisé dans les TD suivants, propose la
+fonction `discretelogistic()`, qui fait la même simulation que `simuler()`.
+Vous pouvez comparer :
+`MQMF::discretelogistic(r = 0.5, K = 1000, N0 = 100, Ct = 0, Yrs = 50)`.
+:::
+
+```{r}
+#| label: session
+sessionInfo()
+```

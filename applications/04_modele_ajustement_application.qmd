@@ -57,7 +57,8 @@ B_{t+1} = B_t + r\,B_t\left(1 - \frac{B_t}{K}\right) - C_t
 $$
 
 avec $t$ l'année, $B_t$ la biomasse, $r$ le taux intrinsèque
-d'accroissement, $K$ la capacité de charge et $C_t$ les captures.
+d'accroissement, $K$ la capacité de charge (biomasse
+d'équilibre du stock non exploité, ou biomasse vierge) et $C_t$ les captures.
 
 On peut aussi l'écrire en temps continu :
 
@@ -331,7 +332,7 @@ indice <- q_vrai * B_vrai * exp(rnorm(30, mean = 0, sd = 0.1))
 
 simu <- data.frame(annee = annees, captures = captures, B = B_vrai, indice = indice)
 ggplot(simu, aes(annee, indice)) +
-  geom_point(colour = "#0032C8") +
+  geom_point(colour = "blue3") +
   geom_line(aes(y = q_vrai * B), colour = "grey50") +
   labs(x = "Année", y = "Indice d'abondance",
        subtitle = "points : indice observé ; ligne : q x biomasse vraie") +
