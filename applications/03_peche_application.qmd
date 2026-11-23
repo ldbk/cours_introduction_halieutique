@@ -29,9 +29,8 @@ espèce** de votre choix, **dans le temps et dans l'espace** :
 2. choisir une espèce ;
 3. décrire l'évolution des débarquements annuels ;
 4. comparer les engins de pêche ;
-5. suivre le prix moyen au kilo ;
-6. cartographier les débarquements par rectangle statistique, année par année ;
-7. calculer et interpréter une capture par unité d'effort.
+5. cartographier les débarquements par rectangle statistique, année par année ;
+6. calculer et interpréter une capture par unité d'effort.
 
 **Durée** : environ 2 heures.
 
@@ -44,11 +43,16 @@ On attend un code qui fonctionne, des figures lisibles et, surtout, des
 
 1. Travaillez dans le projet RStudio créé au TD précédent.
 2. Copiez-y ce fichier et le dossier `data/` qui l'accompagne (fichiers
-   `landings.csv`, `landings_rect.csv`, `icesrect.rds`, `icesdiv.rds`,
+   `landings.csv`, `landings_rect.csv`, `icesrect.rds`, `icesdiv.rds`, `cote.rds`,
    `REFERENTIEL_ENGINS.txt`, `REFERENTIEL_ESPECES.txt`).
 3. Exécutez les blocs d'exemple, puis complétez les blocs **« À vous »** et
    rédigez vos commentaires à la place de *(commentez ici)*.
-4. Cherchez par vous-même : la correction sera fournie après la séance.
+4. À partir de la partie « Choisir une espèce », un **exemple corrigé** sur
+   la dorade grise (`BRB`) est donné dans des encadrés repliés. Ses objets
+   portent le suffixe `_ex` (`sp_ex`, `annuel_ex`...) pour ne pas écraser les
+   vôtres. Inspirez-vous-en, mais travaillez sur **une autre espèce** et
+   rédigez vos propres commentaires. La partie « Découvrir les données » et
+   la synthèse n'ont pas de corrigé.
 
 ::: {.callout-note}
 ## Packages nécessaires
@@ -101,9 +105,10 @@ lan_rect <- read.csv("data/landings_rect.csv")
 # Référentiels : fichiers texte séparés par des tabulations, encodés en ISO-8859-1
 ref_engin <- read.delim("data/REFERENTIEL_ENGINS.txt", fileEncoding = "ISO-8859-1")
 ref_espece <- read.delim("data/REFERENTIEL_ESPECES.txt", fileEncoding = "ISO-8859-1")
-# Couches cartographiques (objets sf) : rectangles et division CIEM
+# Couches cartographiques (objets sf) : rectangles, division CIEM et terres
 rect <- readRDS("data/icesrect.rds")
 div <- readRDS("data/icesdiv.rds")
+cote <- readRDS("data/cote.rds")   # trait de côte (Natural Earth, 1:10 M)
 ```
 
 ## Appréhender les objets
@@ -153,6 +158,7 @@ rect                       # 15 rectangles statistiques de la division 7d
 st_crs(rect)$epsg          # système de coordonnées : 4326 = longitude/latitude (WGS84)
 plot(st_geometry(rect))    # tracé rapide des rectangles
 plot(st_geometry(div), border = "blue", lwd = 2, add = TRUE)
+plot(st_geometry(cote), col = "grey85", border = "grey40", add = TRUE)  # terres
 ```
 
 ## À vous
@@ -161,9 +167,8 @@ Répondez aux questions suivantes par du code **et** par une phrase.
 
 1. Quelle période couvrent les données ? L'année 2026 est-elle complète ?
 2. Combien d'espèces et d'engins différents ? Que signifie un code d'engin vide (`""`) ?
-3. Quelle proportion de lignes n'a **pas** de valeur en euros (`totaleuros`) ? Cette proportion change-t-elle avec les années ?
-4. Le total débarqué est-il le même dans `landings.csv` et `landings_rect.csv` ? Pourquoi ?
-5. Quel rectangle des débarquements n'existe pas dans la couche `rect` ?
+3. Le total débarqué est-il le même dans `landings.csv` et `landings_rect.csv` ? Pourquoi ?
+4. Quel rectangle des débarquements n'existe pas dans la couche `rect` ?
 
 ```{r}
 #| label: avous-explorer
@@ -180,13 +185,15 @@ français. On joint les deux tableaux avec `merge()` sur le code FAO.
 
 ```{r}
 #| label: top-especes
-#| fig-height: 5
+#| fig-height: 7
 tot_esp <- aggregate(totalweight ~ faocode, data = lan, FUN = sum)
 tot_esp <- merge(tot_esp, ref_espece, by.x = "faocode", by.y = "ESP_COD_FAO",
                  all.x = TRUE)
 tot_esp <- tot_esp[order(tot_esp$totalweight, decreasing = TRUE), ]
-top15 <- head(tot_esp, 15)
-ggplot(top15, aes(x = reorder(ESP_LIB_FAO_FRANCAIS, totalweight),
+top25 <- head(tot_esp, 25)
+# étiquette : nom français suivi du code FAO, par exemple « Dorade grise (BRB) »
+top25$etiquette <- paste0(top25$ESP_LIB_FAO_FRANCAIS, " (", top25$faocode, ")")
+ggplot(top25, aes(x = reorder(etiquette, totalweight),
                   y = totalweight / 1e6)) +
   geom_col(fill = "#0032C8") +
   coord_flip() +
@@ -198,7 +205,8 @@ ggplot(top15, aes(x = reorder(ESP_LIB_FAO_FRANCAIS, totalweight),
 
 1. Choisissez une espèce : trouvez son code FAO dans `ref_espece` (par exemple
    avec `ref_espece[grepl("Sole", ref_espece$ESP_LIB_FAO_FRANCAIS), ]`) et
-   stockez-le dans une variable `espece`.
+   stockez-le dans une variable `espece`. Choisissez une autre espèce que la
+   dorade grise, traitée dans l'exemple corrigé.
 2. Créez deux tableaux `sp` (à partir de `lan`) et `sp_rect` (à partir de
    `lan_rect`) ne contenant que cette espèce, **sans l'année 2026**.
 
@@ -212,6 +220,25 @@ de changer cette ligne et de recompiler.
 ```
 
 *(commentez ici : pourquoi cette espèce ?)*
+
+::: {.callout-tip collapse="true"}
+## Exemple corrigé : la dorade grise
+
+```{r}
+#| label: solution-espece
+ref_espece[grepl("Dorade", ref_espece$ESP_LIB_FAO_FRANCAIS), ]
+espece_ex <- "BRB"   # dorade grise ou griset (Spondyliosoma cantharus)
+sp_ex <- lan[lan$faocode == espece_ex & lan$year < 2026, ]
+sp_rect_ex <- lan_rect[lan_rect$faocode == espece_ex & lan_rect$year < 2026, ]
+nom_espece_ex <- ref_espece$ESP_LIB_FAO_FRANCAIS[ref_espece$ESP_COD_FAO == espece_ex]
+nom_espece_ex
+```
+
+La dorade grise (ou griset) est une espèce importante de la Manche Est, au
+19^e^ rang des débarquements français dans la zone. Elle est pêchée à la fois
+par des chaluts de fond et par des chaluts pélagiques, ce qui en fait un bon
+cas pour comparer les métiers.
+:::
 
 # Évolution des débarquements annuels
 
@@ -229,6 +256,33 @@ de changer cette ligne et de recompiler.
 ```
 
 *(commentez ici)*
+
+::: {.callout-tip collapse="true"}
+## Exemple corrigé : la dorade grise
+
+```{r}
+#| label: solution-annuel
+#| fig-height: 4
+annuel_ex <- aggregate(totalweight ~ year, data = sp_ex, FUN = sum)
+annuel_ex$tonnes <- annuel_ex$totalweight / 1000
+ggplot(annuel_ex, aes(year, tonnes)) +
+  geom_line(colour = "#0032C8") +
+  geom_point(colour = "#0032C8") +
+  labs(x = "Année", y = "Débarquements (t)",
+       title = paste("Débarquements annuels :", nom_espece_ex)) +
+  theme_minimal()
+annee_max_ex <- annuel_ex$year[which.max(annuel_ex$tonnes)]
+t_2025_ex <- round(annuel_ex$tonnes[annuel_ex$year == 2025])
+```
+
+Les débarquements de `r nom_espece_ex` sont maximaux en `r annee_max_ex` et
+atteignent `r t_2025_ex` tonnes en 2025. Ils fluctuent fortement d'une année à
+l'autre, entre 600 et 1 900 tonnes environ, sans tendance nette sur la
+période : le pic de 2007 à 2009 est suivi d'un net recul en 2011, puis les
+débarquements oscillent entre 600 et 1 100 tonnes. Ces chiffres
+sont des minimums (secret statistique) et ne tiennent pas compte des
+débarquements des navires étrangers.
+:::
 
 # Débarquements par engin
 
@@ -250,27 +304,36 @@ Le code de l'engin est peu parlant : on ajoute son nom avec le référentiel
 
 *(commentez ici)*
 
-# Prix moyen au kilo
-
-Le prix moyen se calcule en divisant la valeur des ventes par le poids vendu.
-Attention : la valeur en euros est **souvent manquante**. Il faut donc
-calculer le prix **uniquement sur les lignes où elle est renseignée**, en
-sommant les euros et les kilos de ces seules lignes.
-
-## À vous
-
-1. Pour chaque année, calculez le prix moyen (€/kg) sur les lignes renseignées,
-   ainsi que la **part du poids** pour laquelle le prix est connu.
-2. Représentez le prix moyen dans le temps. Ce prix est-il fiable pour toutes
-   les années ?
+::: {.callout-tip collapse="true"}
+## Exemple corrigé : la dorade grise
 
 ```{r}
-#| label: avous-prix
-# votre code ici
+#| label: solution-engin
+#| fig-height: 4.5
+par_engin_ex <- aggregate(totalweight ~ gear, data = sp_ex, FUN = sum)
+par_engin_ex <- merge(par_engin_ex, ref_engin, by.x = "gear", by.y = "ENGIN_COD",
+                   all.x = TRUE)
+par_engin_ex <- par_engin_ex[order(par_engin_ex$totalweight, decreasing = TRUE), ]
+par_engin_ex$part <- round(100 * par_engin_ex$totalweight / sum(par_engin_ex$totalweight), 1)
+head(par_engin_ex[, c("gear", "ENGIN_LIB", "part")], 6)
 
+top4_ex <- head(par_engin_ex$gear, 4)
+engin_an_ex <- aggregate(totalweight ~ year + gear, data = sp_ex[sp_ex$gear %in% top4_ex, ],
+                      FUN = sum)
+ggplot(engin_an_ex, aes(year, totalweight / 1000, fill = gear)) +
+  geom_col() +
+  labs(x = "Année", y = "Débarquements (t)", fill = "Engin") +
+  theme_minimal()
 ```
 
-*(commentez ici)*
+La dorade grise est surtout débarquée par les chaluts de fond à panneaux
+(`OTB`, environ 63 % du total), puis par les chaluts bœufs pélagiques (`PTM`,
+chalut tiré par deux navires, environ 27 %) et les chaluts pélagiques à
+panneaux (`OTM`, 5 %). Les débarquements des chaluts de fond sont assez
+stables. Ceux des chaluts bœufs pélagiques s'effondrent après 2010 (de 400 à
+600 tonnes par an à moins de 200 tonnes), sauf en 2023 : ce sont eux qui
+expliquent l'essentiel des fluctuations du total.
+:::
 
 # Cartographie annuelle
 
@@ -285,7 +348,8 @@ mettant l'objet `sf` en premier pour conserver la géométrie.
    `sp_rect`.
 2. Joignez-les à `rect` (`by.x = "offname", by.y = "icesrect"`).
 3. Tracez une carte par année (`facet_wrap(~ year)`), en coloriant les
-   rectangles selon les débarquements, avec le contour de la division `div`.
+   rectangles selon les débarquements, avec le contour de la division `div`
+   et le trait de côte `cote` (terres en gris).
 4. Quelles zones concentrent les débarquements ? La répartition change-t-elle
    dans le temps ?
 
@@ -296,6 +360,42 @@ mettant l'objet `sf` en premier pour conserver la géométrie.
 ```
 
 *(commentez ici)*
+
+::: {.callout-tip collapse="true"}
+## Exemple corrigé : la dorade grise
+
+```{r}
+#| label: solution-carte
+#| fig-width: 10
+#| fig-height: 9
+par_rect_ex <- aggregate(totalweight ~ year + icesrect, data = sp_rect_ex, FUN = sum)
+par_rect_ex$tonnes <- par_rect_ex$totalweight / 1000
+carte_ex <- merge(rect, par_rect_ex, by.x = "offname", by.y = "icesrect")
+ggplot() +
+  geom_sf(data = carte_ex, aes(fill = tonnes), colour = "white", linewidth = 0.2) +
+  geom_sf(data = div, fill = NA, colour = "#0032C8", linewidth = 0.4) +
+  geom_sf(data = cote, fill = "grey85", colour = "grey40", linewidth = 0.2) +  # terres par-dessus
+  scale_fill_viridis_c(name = "Débarquements (t)", trans = "sqrt") +
+  coord_sf(xlim = c(-2, 2.6), ylim = c(49, 51.1), expand = FALSE) +   # cadrage sur les rectangles
+  facet_wrap(~ year, ncol = 6) +
+  guides(fill = guide_colourbar(barwidth = 15)) +
+  theme_void() +
+  theme(legend.position = "bottom")
+```
+
+Les débarquements de dorade grise proviennent surtout du centre de la
+division, au large du pays de Caux et de la baie de Somme (rectangles 28F0 et
+29F0, environ la moitié du total chaque année). La répartition change peu,
+avec deux évolutions : la part du rectangle 28E9, à l'ouest, passe d'environ
+20 % au début des années 2000 à moins de 5 % depuis 2021, et le rectangle
+30F1, au large de Boulogne-sur-Mer, prend plus de poids depuis 2023. Ces
+évolutions peuvent refléter un changement de répartition de l'espèce, mais
+aussi de l'activité des flottilles, par exemple des chalutiers pélagiques.
+Le gradient de
+couleur est en racine carrée (`trans = "sqrt"`) pour que les petites valeurs
+restent visibles. Les rectangles sans couleur n'ont pas de
+débarquement diffusé (absence de capture ou secret statistique).
+:::
 
 # Capture par unité d'effort
 
@@ -328,12 +428,46 @@ par engin**.
 
 *(commentez ici)*
 
+::: {.callout-tip collapse="true"}
+## Exemple corrigé : la dorade grise
+
+```{r}
+#| label: solution-cpue
+#| fig-height: 4
+top3_ex <- head(par_engin_ex$gear, 3)
+cpue_ex <- aggregate(cbind(totalweight, nbtrip) ~ year + gear,
+                  data = sp_ex[sp_ex$gear %in% top3_ex, ], FUN = sum)
+cpue_ex$kg_maree <- cpue_ex$totalweight / cpue_ex$nbtrip
+ggplot(cpue_ex, aes(year, kg_maree, colour = gear)) +
+  geom_line(linewidth = 1) +
+  geom_point() +
+  labs(x = "Année", y = "CPUE (kg par marée)", colour = "Engin") +
+  theme_minimal()
+```
+
+Les niveaux de CPUE diffèrent beaucoup d'un engin à l'autre. Les chaluts
+bœufs pélagiques (`PTM`) débarquent plusieurs centaines de kilos par marée :
+ils ciblent les bancs de dorade grise. Pour les chaluts de fond (`OTB`), c'est
+une capture parmi d'autres, autour de 100 kg par marée. D'où l'intérêt de
+séparer les engins.
+
+La CPUE des chaluts de fond est remarquablement stable (70 à 145 kg par
+marée), sans tendance : rien n'indique une baisse d'abondance. Celle des
+chaluts pélagiques varie très fortement d'une année à l'autre (de 100 à plus
+de 1 000 kg par marée pour `PTM`) : elle dépend surtout de la rencontre avec
+des bancs, plus que de l'abondance du stock. Une CPUE d'engin pélagique
+qui cible des concentrations de poissons est un mauvais indice d'abondance :
+elle peut rester élevée alors que le stock diminue (hyperstabilité). Pour conclure, il faudrait des données
+d'effort complètes (jours de mer de toute la flottille) et des indices
+scientifiques indépendants de la pêche (campagnes en mer).
+:::
+
 # Synthèse
 
 Rédigez une courte conclusion (5 à 10 lignes) qui résume ce que vous avez
 appris sur votre espèce : tendance des débarquements, principaux engins,
-évolution du prix, zones de pêche, CPUE. Rappelez les **limites des
-données** (secret statistique, prix partiels, effort incomplet, année 2026).
+zones de pêche, CPUE. Rappelez les **limites des données** (secret
+statistique, effort incomplet, année 2026).
 Compilez ensuite le document et envoyez le `.qmd` et le `.html`.
 
 *(rédigez ici)*

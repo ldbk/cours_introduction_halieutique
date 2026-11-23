@@ -997,7 +997,6 @@ Pour aller plus loin en français : @cury2008a et @gascuel2019.
 | Choisir une espèce | repérer les espèces les plus débarquées en Manche Est | ressources exploitées, vocabulaire |
 | Évolution annuelle | tracer les débarquements de 2000 à 2025 | industrialisation, référentiel glissant |
 | Par engin | comparer les engins qui débarquent l'espèce | engins actifs et passifs, classification FAO |
-| Prix au kilo | suivre la valeur des débarquements | commerce, filière |
 | Cartographie | cartographier les débarquements par rectangle statistique | zones de pêche, métiers |
 | Capture par unité d'effort | calculer des kilos par marée, engin par engin | effort de pêche, sélectivité |
 
@@ -1022,15 +1021,15 @@ cartographiques (les rectangles statistiques et la division 7d).
 Chaque partie du TD renvoie à une partie du cours. L'évolution des
 débarquements dans le temps illustre les questions d'abondance et de
 référentiel glissant. La comparaison des engins s'appuie sur la
-classification FAO vue en fin de cours. Le prix au kilo renvoie au commerce
-des produits de la mer, et la cartographie aux zones de pêche et aux métiers.
+classification FAO vue en fin de cours. La cartographie renvoie aux zones de
+pêche et aux métiers.
 Enfin, la capture par marée est une première mesure de capture par unité
 d'effort. Vous en verrez l'usage comme indice d'abondance dans le cours sur
 les modèles d'évaluation des stocks.
 
 Les données ont des limites, que le TD vous fera découvrir : le secret
-statistique supprime les lignes qui concernent moins de 5 navires, la valeur
-en euros est souvent manquante, et l'année 2026 est incomplète. Repérer et
+statistique supprime les lignes qui concernent moins de 5 navires, et
+l'année 2026 est incomplète. Repérer et
 expliquer ces limites fait partie du travail d'un halieute.
 :::
 
