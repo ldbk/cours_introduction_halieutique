@@ -1,0 +1,475 @@
+---
+title: "TD 2 — Premiers pas avec R et Quarto"
+subtitle: "Introduction à l'halieutique — M2 Sciences de la Mer"
+author: "Laurent Dubroca"
+date: today
+lang: fr
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    number-sections: true
+    embed-resources: true
+    code-tools: true
+    theme: cosmo
+execute:
+  echo: true
+  warning: false
+  message: false
+---
+
+# Objectifs et mode d'emploi {.unnumbered}
+
+À la fin de ce TD (environ **1 h 30**), vous saurez compléter et compiler un
+document **Quarto**, utiliser les bases de **R**, explorer un jeu de données,
+charger un **package** et produire des **graphiques** en R de base et avec
+**ggplot2**.
+
+1. Dans RStudio, créez un **projet** (**File > New Project > New Directory >
+   New Project**), par exemple `td_halieutique`. Le projet fixe le répertoire
+   de travail : les chemins de fichiers s'écrivent relativement à ce dossier.
+2. Copiez ce fichier dans le dossier du projet et ouvrez-le dans RStudio.
+3. Exécutez les exemples bloc par bloc, puis faites les exercices **« À vous »**.
+   Cherchez par vous-même : la correction sera fournie après la séance.
+4. À la fin, compilez le document avec le bouton **Render**.
+
+::: {.callout-note}
+Seul le package **ggplot2** est nécessaire (section 5). Toutes les données
+sont créées dans le document.
+:::
+
+# Travailler avec un document Quarto
+
+Un document Quarto (`.qmd`) est un fichier texte qui contient :
+
+1. un **en-tête YAML**, entre deux lignes `---` (titre, auteur, format de sortie) ;
+2. du **texte** en **Markdown** ;
+3. des **blocs de code** R, délimités par trois accents graves et `{r}` :
+
+```{{r}}
+#| label: mon-bloc
+#| echo: false
+1 + 1
+```
+
+Les lignes `#|` sont des **options** : `label` nomme le bloc, `echo: false`
+masque le code, `eval: false` affiche le code sans l'exécuter, `fig-cap`
+donne une légende à une figure.
+
+Quand on **compile** (**Render**), Quarto exécute tous les blocs dans l'ordre
+et assemble texte, code et résultats dans un document final.
+
+| Action | Windows / Linux | Mac |
+|---|---|---|
+| Exécuter la ligne ou la sélection | `Ctrl + Entrée` | `Cmd + Entrée` |
+| Exécuter tout le bloc | `Ctrl + Maj + Entrée` | `Cmd + Maj + Entrée` |
+| Insérer un bloc R | `Ctrl + Alt + I` | `Cmd + Option + I` |
+| Compiler | `Ctrl + Maj + K` | `Cmd + Maj + K` |
+
+: Raccourcis utiles dans RStudio
+
+::: {.callout-warning}
+À la compilation, R repart **de zéro**. Un objet créé seulement dans la
+console n'existera pas : tout doit être dans le document.
+:::
+
+**Markdown en bref** : `**gras**` donne **gras**, `*italique*` donne
+*italique*, `## Titre` crée une section, `- élément` une liste,
+`[Ifremer](https://www.ifremer.fr)` un lien.
+
+**Code R dans le texte** : la syntaxe
+`` `r knitr::inline_expr("round(sqrt(2), 3)")` `` insère le résultat dans
+la phrase, ici `r round(sqrt(2), 3)`. Les chiffres du texte restent ainsi à
+jour avec les données.
+
+## À vous
+
+1. Dans l'en-tête, remplacez le nom de l'auteur par le vôtre.
+2. Sous ce paragraphe, écrivez deux phrases sur une espèce marine exploitée,
+   avec un mot en **gras**, un en *italique* et un calcul en ligne (par
+   exemple le nombre de jours dans 12 semaines).
+3. Compilez avec **Render** et vérifiez le résultat.
+
+*(écrivez ici)*
+
+# Les bases de R
+
+## Calculs et variables
+
+```{r}
+#| label: calculatrice
+(10 - 4) * 2       # les parenthèses fixent l'ordre des opérations
+2^3                # puissance
+sqrt(16)           # racine carrée ; une fonction s'écrit nom(arguments)
+round(3.14159, 2)  # arrondi à 2 décimales
+```
+
+Tout ce qui suit `#` est un **commentaire**, ignoré par R.
+
+Une **variable** associe un nom à une valeur avec `<-` (raccourci `Alt + -`,
+ou `Option + -` sur Mac). Les noms commencent par une lettre, sans espace ni
+accent, et R distingue majuscules et minuscules.
+
+```{r}
+#| label: variables
+captures_2023 <- 1250    # tonnes
+captures_2024 <- 1100
+(captures_2024 - captures_2023) / captures_2023 * 100   # évolution en %
+```
+
+Chaque valeur a un **type** : numérique (`32.5`), texte (`"Solea solea"`),
+logique (`TRUE`/`FALSE`). La fonction `class()` l'indique. Pour obtenir
+l'aide d'une fonction, tapez `?nom_de_la_fonction` dans la console.
+
+## Comparaisons
+
+Une comparaison renvoie `TRUE` ou `FALSE` : `==` (égal, avec deux `=`),
+`!=` (différent), `<`, `>`, `<=`, `>=`. On combine les conditions avec `&`
+(ET) et `|` (OU).
+
+```{r}
+#| label: comparaisons
+longueur <- 32.5
+longueur >= 24
+longueur > 30 & longueur < 40
+```
+
+## Vecteurs
+
+Un **vecteur** regroupe plusieurs valeurs de même type, créé avec `c()`. Les
+opérations s'appliquent **élément par élément**, et les crochets `[ ]`
+sélectionnent des éléments.
+
+```{r}
+#| label: vecteurs
+annees <- 2018:2024
+debarquements <- c(820, 910, 760, 880, 950, 1010, 930)  # tonnes (fictif)
+debarquements * 1000             # conversion en kg
+mean(debarquements)
+debarquements[1]                 # 1er élément
+annees[debarquements > 900]      # années où l'on dépasse 900 t
+```
+
+## Tableaux de données (`data.frame`)
+
+Un **data.frame** est un tableau dont chaque colonne est un vecteur. Le bloc
+suivant crée un jeu **fictif** de débarquements de quatre espèces dans trois
+ports de la Manche (2015-2024). **Exécutez-le sans chercher à tout
+comprendre** : seul compte le tableau `debarq` obtenu.
+
+```{r}
+#| label: creation-donnees
+set.seed(42)  # pour obtenir toujours les mêmes valeurs aléatoires
+debarq <- expand.grid(
+  annee  = 2015:2024,
+  espece = c("Sole", "Plie", "Coquille Saint-Jacques", "Seiche"),
+  port   = c("Port-en-Bessin", "Cherbourg", "Granville")
+)
+niveau <- c("Sole" = 60, "Plie" = 40,
+            "Coquille Saint-Jacques" = 900, "Seiche" = 250)
+debarq$tonnes <- round(niveau[as.character(debarq$espece)] *
+                       runif(nrow(debarq), min = 0.6, max = 1.4))
+head(debarq)
+```
+
+On accède à une colonne avec `$` et à des lignes ou colonnes avec
+`[lignes, colonnes]` :
+
+```{r}
+#| label: indexation-df
+debarq$tonnes[1:5]
+debarq[debarq$espece == "Sole" & debarq$annee == 2024, ]
+```
+
+## Lire et écrire des fichiers CSV et RDS
+
+Les données sont normalement lues dans un fichier, rangé dans un dossier
+`data/` du projet et désigné par un **chemin relatif** (`"data/debarq.csv"`),
+jamais par un chemin absolu (`"C:/Users/moi/..."`).
+
+**Le format CSV** (*comma-separated values*) est un simple fichier texte :
+une ligne par observation, des colonnes séparées par un caractère. Il se lit
+avec n'importe quel logiciel (tableur, R, Python) : c'est le format d'échange
+par excellence. Attention aux deux conventions :
+
+| Convention | Séparateur de colonnes | Décimale | Lecture | Écriture |
+|---|---|---|---|---|
+| internationale | `,` | `.` | `read.csv()` | `write.csv()` |
+| française (tableurs en français) | `;` | `,` | `read.csv2()` | `write.csv2()` |
+
+: Les deux conventions du format CSV
+
+**Le format RDS** est propre à R : il enregistre **un objet R tel quel**
+(types des colonnes, facteurs, dates...) dans un fichier binaire compressé. Il
+est rapide et fidèle, mais ne se lit qu'avec R.
+
+```{r}
+#| label: ecrire-lire
+dir.create("data", showWarnings = FALSE)        # crée data/ s'il n'existe pas
+
+# CSV
+write.csv(debarq, "data/debarq.csv", row.names = FALSE)
+debarq_csv <- read.csv("data/debarq.csv")
+
+# RDS
+saveRDS(debarq, "data/debarq.rds")
+debarq_rds <- readRDS("data/debarq.rds")
+
+# Les types de colonnes sont-ils conservés ?
+class(debarq$espece)        # dans l'objet d'origine
+class(debarq_csv$espece)    # relu depuis le CSV
+class(debarq_rds$espece)    # relu depuis le RDS
+```
+
+Le CSV ne garde que du texte et des nombres : le facteur `espece` est relu
+comme du texte (`character`). Le RDS restitue l'objet à l'identique.
+
+::: {.callout-tip}
+## Que choisir ?
+
+**CSV** pour les données brutes et pour échanger ou archiver (lisible par
+tous, durable). **RDS** pour sauvegarder un objet R intermédiaire (données
+nettoyées, résultat d'un modèle) que l'on réutilisera dans R.
+:::
+
+::: {.callout-important}
+Le fichier de données brutes **ne se modifie jamais à la main** : les
+corrections se font dans le code, de façon visible et commentée.
+:::
+
+## À vous
+
+Le bloc suivant crée un petit fichier `data/criee.csv` au format français.
+Exécutez-le sans le modifier.
+
+```{r}
+#| label: creation-criee
+writeLines(c("espece;prix_kg",
+             "Sole;18,5",
+             "Bar;14,2",
+             "Seiche;6,8"),
+           "data/criee.csv")
+```
+
+1. Lisez `data/criee.csv` avec `read.csv()`. Combien de colonnes obtenez-vous ?
+   Pourquoi ?
+2. Relisez-le correctement avec la bonne fonction, et vérifiez avec `str()` que
+   `prix_kg` est bien numérique.
+3. Enregistrez ce tableau au format RDS dans `data/criee.rds`, relisez-le et
+   calculez le prix moyen au kilo.
+
+```{r}
+#| label: avous-fichiers
+# votre code ici
+
+```
+
+## Écrire une fonction
+
+Quand on répète le même calcul, on l'écrit une fois pour toutes dans une
+**fonction**. Elle a un nom, des **arguments** (qui peuvent avoir une valeur
+par défaut) et renvoie la dernière valeur calculée, ou ce qu'indique `return()`.
+
+```{r}
+#| label: fonction
+# conversion de tonnes en kilogrammes
+tonnes_en_kg <- function(tonnes) {
+  tonnes * 1000
+}
+tonnes_en_kg(1.5)
+
+# part (en %) de chaque valeur dans le total ; arrondi = 1 par défaut
+part <- function(x, arrondi = 1) {
+  round(x / sum(x) * 100, arrondi)
+}
+part(c(820, 910, 760))
+part(c(820, 910, 760), arrondi = 0)
+```
+
+Une fonction rend le code plus **court**, plus **lisible** et évite les erreurs
+de copier-coller : si la formule change, on la corrige à un seul endroit.
+
+## À vous
+
+1. La relation taille–masse de la sole est $M = a \, L^b$, avec $a = 0{,}0075$
+   et $b = 3{,}1$ (masse en g, longueur en cm). Écrivez une fonction
+   `masse(L, a = 0.0075, b = 3.1)`, puis appliquez-la à un vecteur `tailles`
+   contenant les longueurs de 8 soles (22, 27, 31, 25, 34, 29, 24, 30 cm).
+2. Combien de ces soles mesurent moins de 24 cm, la taille minimale de
+   débarquement en Manche ?
+3. Dans `debarq`, calculez la moyenne des débarquements de seiche à Cherbourg.
+
+```{r}
+#| label: avous-bases
+# votre code ici
+
+```
+
+# Explorer un objet
+
+Avant toute analyse, on **regarde ses données** : structure, types, valeurs,
+erreurs éventuelles.
+
+```{r}
+#| label: explorer
+dim(debarq)          # nombre de lignes et de colonnes
+str(debarq)          # type et premières valeurs de chaque colonne
+summary(debarq)      # résumé statistique de chaque colonne
+unique(debarq$port)  # valeurs distinctes
+table(debarq$espece) # effectif par modalité
+```
+
+Dans RStudio, l'onglet **Environment** liste les objets ; un clic sur un
+data.frame l'affiche sous forme de tableau.
+
+## À vous
+
+Avec le jeu `iris`, fourni avec R : combien de lignes et de colonnes ? Combien
+d'individus par espèce (`Species`) ? Quelle est la longueur moyenne des
+sépales (`Sepal.Length`) ?
+
+```{r}
+#| label: avous-explorer
+# votre code ici
+
+```
+
+# Installer et charger des packages
+
+Un **package** ajoute des fonctions à R. Il faut distinguer deux étapes :
+
+| Étape | Commande | Quand ? |
+|---|---|---|
+| **Installer** | `install.packages("ggplot2")` | une seule fois par ordinateur |
+| **Charger** | `library(ggplot2)` | à chaque session, en début de document |
+
+Ne laissez pas `install.packages()` actif dans un document : le package
+serait réinstallé à chaque compilation. Ce bloc l'installe seulement s'il
+manque, puis le charge :
+
+```{r}
+#| label: installer-si-besoin
+if (!requireNamespace("ggplot2", quietly = TRUE)) {
+  install.packages("ggplot2")
+}
+library(ggplot2)
+```
+
+La notation `package::fonction()`, par exemple `knitr::kable()`, utilise une
+fonction sans charger le package et indique d'où elle vient.
+
+# Graphiques avec R de base
+
+Les fonctions graphiques de base sont rapides pour explorer des données.
+
+```{r}
+#| label: fig-base
+#| fig-cap: "Graphiques de base (données fictives)"
+#| fig-width: 9
+#| fig-height: 4
+csj <- debarq[debarq$espece == "Coquille Saint-Jacques" &
+              debarq$port == "Port-en-Bessin", ]
+par(mfrow = c(1, 2))   # deux graphiques côte à côte
+plot(csj$annee, csj$tonnes, type = "b", pch = 19, col = "darkblue",
+     main = "Coquille - Port-en-Bessin", xlab = "Année", ylab = "Tonnes")
+boxplot(tonnes ~ port, data = debarq[debarq$espece == "Sole", ],
+        col = "lightgreen", main = "Sole", xlab = "", ylab = "Tonnes")
+par(mfrow = c(1, 1))
+```
+
+`type = "b"` trace points et lignes ; la formule `tonnes ~ port` se lit
+« tonnes en fonction du port ». `barplot()` et `hist()` tracent des barres et
+des histogrammes.
+
+## À vous
+
+Tracez l'évolution des débarquements de sole à Granville, en rouge, avec un
+titre et des noms d'axes.
+
+```{r}
+#| label: avous-base
+# votre code ici
+
+```
+
+# Graphiques avec ggplot2
+
+**ggplot2** construit un graphique par **couches** reliées par `+` : les
+**données** (`ggplot(data)`), les **correspondances** entre variables et axes
+ou couleurs (`aes()`), une ou plusieurs **géométries** (`geom_line()`,
+`geom_point()`, `geom_col()`, `geom_boxplot()`...), puis des réglages
+(`labs()`, `facet_wrap()`, `theme_...()`).
+
+```{r}
+#| label: fig-gg-couleur
+#| fig-cap: "Débarquements par espèce à Port-en-Bessin (données fictives)"
+peb <- debarq[debarq$port == "Port-en-Bessin", ]
+ggplot(peb, aes(x = annee, y = tonnes, colour = espece)) +
+  geom_line() +
+  geom_point() +
+  labs(x = "Année", y = "Débarquements (t)", colour = "Espèce") +
+  theme_minimal()
+```
+
+Associer une variable à la couleur crée automatiquement une courbe par espèce
+et la légende. La coquille écrase les autres espèces : `facet_wrap()` crée un
+panneau par modalité, et `scales = "free_y"` donne à chacun sa propre échelle.
+
+```{r}
+#| label: fig-gg-facettes
+#| fig-cap: "Débarquements par espèce et par port (données fictives)"
+#| fig-width: 9
+#| fig-height: 6
+ggplot(debarq, aes(x = annee, y = tonnes, colour = port)) +
+  geom_line() +
+  facet_wrap(~ espece, scales = "free_y") +
+  labs(x = "Année", y = "Débarquements (t)", colour = "Port") +
+  theme_bw()
+```
+
+## À vous
+
+1. Tracez l'évolution des débarquements de seiche, avec une courbe par port et
+   un titre.
+2. Tracez une boîte à moustaches (`geom_boxplot()`) des débarquements par port,
+   avec un panneau par espèce et des échelles libres.
+
+```{r}
+#| label: avous-gg
+# votre code ici
+
+```
+
+# Synthèse : un mini-rapport reproductible
+
+À la suite de ce paragraphe :
+
+1. Calculez le total annuel débarqué par espèce, tous ports confondus :
+   `total <- aggregate(tonnes ~ annee + espece, data = debarq, FUN = sum)`.
+2. Représentez-le avec ggplot2, avec une légende de figure (`#| fig-cap`).
+3. Écrivez une phrase contenant un **chiffre calculé en ligne**, par exemple le
+   total de coquille Saint-Jacques en 2024.
+4. Compilez. Puis remplacez `set.seed(42)` par `set.seed(1)` (section 2.4) et
+   recompilez : chiffres, figure **et texte** se mettent à jour tout seuls.
+   C'est le principe de la **recherche reproductible**.
+
+```{r}
+#| label: avous-synthese
+# votre code ici
+
+```
+
+# Pour aller plus loin {.unnumbered}
+
+- *R for Data Science* (2^e^ édition), en accès libre : <https://r4ds.hadley.nz>
+- Documentation de Quarto : <https://quarto.org/docs/guide/>
+- Aide-mémoires de Posit (RStudio, ggplot2, Quarto) :
+  <https://posit.co/resources/cheatsheets/>
+
+Terminer un document par `sessionInfo()` indique les versions de R et des
+packages utilisés, une bonne pratique de reproductibilité :
+
+```{r}
+#| label: session
+sessionInfo()
+```

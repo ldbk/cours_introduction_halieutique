@@ -1,0 +1,344 @@
+---
+title: "TD 3 — Analyse descriptive des débarquements d'une espèce en Manche Est"
+subtitle: "Introduction à l'halieutique — M2 Sciences de la Mer"
+author: "Laurent Dubroca"
+date: today
+lang: fr
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    number-sections: true
+    embed-resources: true
+    code-tools: true
+    theme: cosmo
+execute:
+  echo: true
+  warning: false
+  message: false
+---
+
+# Objectifs et consignes {.unnumbered}
+
+Ce TD prolonge le cours « La pêche, une activité humaine ». À partir des
+statistiques de débarquements des navires français en **Manche Est** (division
+CIEM 7d), vous réaliserez une **analyse descriptive des débarquements d'une
+espèce** de votre choix, **dans le temps et dans l'espace** :
+
+1. découvrir et comprendre les jeux de données ;
+2. choisir une espèce ;
+3. décrire l'évolution des débarquements annuels ;
+4. comparer les engins de pêche ;
+5. suivre le prix moyen au kilo ;
+6. cartographier les débarquements par rectangle statistique, année par année ;
+7. calculer et interpréter une capture par unité d'effort.
+
+**Durée** : environ 2 heures.
+
+**Rendu** : ce document complété (le `.qmd` **et** le `.html` compilé), à
+envoyer par mail à l'intervenant **à la fin de la demi-journée**. Il est noté.
+On attend un code qui fonctionne, des figures lisibles et, surtout, des
+**commentaires rédigés** de vos résultats.
+
+**Mode d'emploi**
+
+1. Travaillez dans le projet RStudio créé au TD précédent.
+2. Copiez-y ce fichier et le dossier `data/` qui l'accompagne (fichiers
+   `landings.csv`, `landings_rect.csv`, `icesrect.rds`, `icesdiv.rds`,
+   `REFERENTIEL_ENGINS.txt`, `REFERENTIEL_ESPECES.txt`).
+3. Exécutez les blocs d'exemple, puis complétez les blocs **« À vous »** et
+   rédigez vos commentaires à la place de *(commentez ici)*.
+4. Cherchez par vous-même : la correction sera fournie après la séance.
+
+::: {.callout-note}
+## Packages nécessaires
+
+**ggplot2** pour les graphiques et **sf** pour les cartes. Le bloc suivant les
+installe s'ils manquent, puis les charge.
+:::
+
+```{r}
+#| label: packages
+for (p in c("ggplot2", "sf")) {
+  if (!requireNamespace(p, quietly = TRUE)) install.packages(p)
+}
+library(ggplot2)
+library(sf)
+```
+
+# Découvrir les données
+
+## D'où viennent ces données ?
+
+Les débarquements des navires de pêche français sont déclarés par les
+pêcheurs (journaux de bord, fiches de pêche) et enregistrés lors des ventes en
+criée. Le **Système d'Informations Halieutiques** (SIH) de l'Ifremer croise
+ces sources pour reconstituer, navire par navire et marée par marée, les
+captures et l'effort de pêche (données dites « Sacrois »). Les fichiers de ce
+TD en sont des **agrégats** pour la Manche Est, depuis 2000.
+
+::: {.callout-important}
+## Secret statistique
+
+Pour protéger les données individuelles des entreprises de pêche, une ligne
+n'est diffusée que si elle concerne **au moins 5 navires**. Les lignes plus
+rares ont été supprimées : les totaux sont donc des **minimums**, et le
+fichier par rectangle (plus détaillé) perd davantage de lignes que le fichier
+global.
+:::
+
+## Lire les fichiers
+
+Les chemins sont relatifs au dossier du document : les fichiers doivent se
+trouver dans un sous-dossier `data/`.
+
+```{r}
+#| label: lecture
+# Débarquements par année, espèce et engin
+lan <- read.csv("data/landings.csv")
+# Débarquements par année, espèce, rectangle statistique et engin
+lan_rect <- read.csv("data/landings_rect.csv")
+# Référentiels : fichiers texte séparés par des tabulations, encodés en ISO-8859-1
+ref_engin <- read.delim("data/REFERENTIEL_ENGINS.txt", fileEncoding = "ISO-8859-1")
+ref_espece <- read.delim("data/REFERENTIEL_ESPECES.txt", fileEncoding = "ISO-8859-1")
+# Couches cartographiques (objets sf) : rectangles et division CIEM
+rect <- readRDS("data/icesrect.rds")
+div <- readRDS("data/icesdiv.rds")
+```
+
+## Appréhender les objets
+
+Avant toute analyse, on regarde **ce que contient chaque objet**. Voici les
+commandes utiles ; exécutez-les et lisez attentivement leurs sorties.
+
+```{r}
+#| label: explorer-lan
+str(lan)                     # type et premières valeurs de chaque colonne
+head(lan)                    # premières lignes
+summary(lan)                 # résumé : min, max, moyenne, valeurs manquantes (NA)
+range(lan$year)              # période couverte
+length(unique(lan$faocode))  # nombre d'espèces
+table(lan$gear)              # nombre de lignes par engin
+```
+
+| Variable | Signification | Unité |
+|---|---|---|
+| `year` | année de débarquement | |
+| `faocode` | code FAO à 3 lettres de l'espèce | |
+| `icesrect` | rectangle statistique CIEM (fichier `landings_rect.csv` uniquement) | |
+| `gear` | code de l'engin de pêche (classification FAO) | |
+| `totalweight` | poids débarqué | kg |
+| `totaleuros` | valeur des ventes | € |
+| `nnav` | nombre de navires concernés | navires |
+| `nbtrip` | nombre de marées (sorties en mer) concernées | marées |
+
+: Variables des fichiers de débarquements
+
+```{r}
+#| label: explorer-autres
+str(lan_rect)
+sort(unique(lan_rect$icesrect))  # rectangles statistiques présents
+head(ref_engin)                  # correspondance code -> nom de l'engin
+head(ref_espece)                 # correspondance code FAO -> nom de l'espèce
+```
+
+Les objets cartographiques sont des tableaux de classe **`sf`** (*simple
+features*) : une colonne `geometry` contient les polygones.
+
+```{r}
+#| label: explorer-sf
+#| fig-height: 4
+class(rect)
+rect                       # 15 rectangles statistiques de la division 7d
+st_crs(rect)$epsg          # système de coordonnées : 4326 = longitude/latitude (WGS84)
+plot(st_geometry(rect))    # tracé rapide des rectangles
+plot(st_geometry(div), border = "blue", lwd = 2, add = TRUE)
+```
+
+## À vous
+
+Répondez aux questions suivantes par du code **et** par une phrase.
+
+1. Quelle période couvrent les données ? L'année 2026 est-elle complète ?
+2. Combien d'espèces et d'engins différents ? Que signifie un code d'engin vide (`""`) ?
+3. Quelle proportion de lignes n'a **pas** de valeur en euros (`totaleuros`) ? Cette proportion change-t-elle avec les années ?
+4. Le total débarqué est-il le même dans `landings.csv` et `landings_rect.csv` ? Pourquoi ?
+5. Quel rectangle des débarquements n'existe pas dans la couche `rect` ?
+
+```{r}
+#| label: avous-explorer
+# votre code ici
+
+```
+
+*(commentez ici)*
+
+# Choisir une espèce
+
+Pour choisir, regardons les espèces les plus débarquées, avec leur nom
+français. On joint les deux tableaux avec `merge()` sur le code FAO.
+
+```{r}
+#| label: top-especes
+#| fig-height: 5
+tot_esp <- aggregate(totalweight ~ faocode, data = lan, FUN = sum)
+tot_esp <- merge(tot_esp, ref_espece, by.x = "faocode", by.y = "ESP_COD_FAO",
+                 all.x = TRUE)
+tot_esp <- tot_esp[order(tot_esp$totalweight, decreasing = TRUE), ]
+top15 <- head(tot_esp, 15)
+ggplot(top15, aes(x = reorder(ESP_LIB_FAO_FRANCAIS, totalweight),
+                  y = totalweight / 1e6)) +
+  geom_col(fill = "#0032C8") +
+  coord_flip() +
+  labs(x = NULL, y = "Débarquements cumulés 2000-2026 (milliers de tonnes)") +
+  theme_minimal()
+```
+
+## À vous
+
+1. Choisissez une espèce : trouvez son code FAO dans `ref_espece` (par exemple
+   avec `ref_espece[grepl("Sole", ref_espece$ESP_LIB_FAO_FRANCAIS), ]`) et
+   stockez-le dans une variable `espece`.
+2. Créez deux tableaux `sp` (à partir de `lan`) et `sp_rect` (à partir de
+   `lan_rect`) ne contenant que cette espèce, **sans l'année 2026**.
+
+Toute la suite utilise `espece` : pour analyser une autre espèce, il suffira
+de changer cette ligne et de recompiler.
+
+```{r}
+#| label: avous-espece
+# votre code ici
+
+```
+
+*(commentez ici : pourquoi cette espèce ?)*
+
+# Évolution des débarquements annuels
+
+## À vous
+
+1. Calculez le total débarqué par année (en tonnes) avec `aggregate()`.
+2. Représentez-le avec ggplot2 (points et lignes).
+3. Indiquez dans une phrase l'année du maximum et la valeur des débarquements
+   en 2025, **calculées en ligne** avec `` `r knitr::inline_expr("...")` ``.
+
+```{r}
+#| label: avous-annuel
+# votre code ici
+
+```
+
+*(commentez ici)*
+
+# Débarquements par engin
+
+Le code de l'engin est peu parlant : on ajoute son nom avec le référentiel
+`ref_engin`.
+
+## À vous
+
+1. Calculez le total débarqué par engin sur toute la période, ajoutez le nom
+   de l'engin avec `merge()`, et classez les engins par ordre décroissant.
+2. Représentez l'évolution annuelle des débarquements des **4 principaux
+   engins** (barres empilées avec `geom_col()`, couleur = engin).
+
+```{r}
+#| label: avous-engin
+# votre code ici
+
+```
+
+*(commentez ici)*
+
+# Prix moyen au kilo
+
+Le prix moyen se calcule en divisant la valeur des ventes par le poids vendu.
+Attention : la valeur en euros est **souvent manquante**. Il faut donc
+calculer le prix **uniquement sur les lignes où elle est renseignée**, en
+sommant les euros et les kilos de ces seules lignes.
+
+## À vous
+
+1. Pour chaque année, calculez le prix moyen (€/kg) sur les lignes renseignées,
+   ainsi que la **part du poids** pour laquelle le prix est connu.
+2. Représentez le prix moyen dans le temps. Ce prix est-il fiable pour toutes
+   les années ?
+
+```{r}
+#| label: avous-prix
+# votre code ici
+
+```
+
+*(commentez ici)*
+
+# Cartographie annuelle
+
+Pour cartographier, on agrège les débarquements par **année et rectangle**,
+puis on joint ce tableau à la couche `rect` (objet `sf`) avec `merge()`, en
+mettant l'objet `sf` en premier pour conserver la géométrie.
+`geom_sf()` trace ensuite les polygones.
+
+## À vous
+
+1. Calculez les débarquements par année et rectangle (en tonnes) à partir de
+   `sp_rect`.
+2. Joignez-les à `rect` (`by.x = "offname", by.y = "icesrect"`).
+3. Tracez une carte par année (`facet_wrap(~ year)`), en coloriant les
+   rectangles selon les débarquements, avec le contour de la division `div`.
+4. Quelles zones concentrent les débarquements ? La répartition change-t-elle
+   dans le temps ?
+
+```{r}
+#| label: avous-carte
+# votre code ici
+
+```
+
+*(commentez ici)*
+
+# Capture par unité d'effort
+
+La **capture par unité d'effort** (CPUE, de l'anglais *catch per unit effort*) rapporte la capture à
+l'effort de pêche déployé. Ici, l'effort disponible est le **nombre de
+marées** (`nbtrip`) : on calcule donc des **kilos débarqués par marée**.
+
+::: {.callout-warning}
+## Une CPUE à interpréter avec prudence
+
+`nbtrip` ne compte que les marées ayant débarqué l'espèce, pas toutes les
+sorties de la flottille. Une marée de fileyeur côtier et une marée de
+chalutier hauturier ne sont pas comparables : on calcule donc la CPUE **engin
+par engin**.
+:::
+
+## À vous
+
+1. Pour les 3 principaux engins, calculez par année la CPUE : somme des
+   kilos / somme des marées.
+2. Représentez son évolution, avec une courbe par engin.
+3. Les CPUE évoluent-elles comme les débarquements totaux ? Qu'en
+   concluez-vous sur l'abondance de l'espèce ?
+
+```{r}
+#| label: avous-cpue
+# votre code ici
+
+```
+
+*(commentez ici)*
+
+# Synthèse
+
+Rédigez une courte conclusion (5 à 10 lignes) qui résume ce que vous avez
+appris sur votre espèce : tendance des débarquements, principaux engins,
+évolution du prix, zones de pêche, CPUE. Rappelez les **limites des
+données** (secret statistique, prix partiels, effort incomplet, année 2026).
+Compilez ensuite le document et envoyez le `.qmd` et le `.html`.
+
+*(rédigez ici)*
+
+```{r}
+#| label: session
+sessionInfo()
+```
