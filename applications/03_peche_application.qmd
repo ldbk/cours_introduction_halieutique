@@ -64,7 +64,7 @@ installe s'ils manquent, puis les charge.
 ```{r}
 #| label: packages
 for (p in c("ggplot2", "sf")) {
-  if (!requireNamespace(p, quietly = TRUE)) install.packages(p)
+    if (!requireNamespace(p, quietly = TRUE)) install.packages(p)
 }
 library(ggplot2)
 library(sf)
@@ -108,7 +108,7 @@ ref_espece <- read.delim("data/REFERENTIEL_ESPECES.txt", fileEncoding = "ISO-885
 # Couches cartographiques (objets sf) : rectangles, division CIEM et terres
 rect <- readRDS("data/icesrect.rds")
 div <- readRDS("data/icesdiv.rds")
-cote <- readRDS("data/cote.rds")   # trait de côte (Natural Earth, 1:10 M)
+cote <- readRDS("data/cote.rds") # trait de côte (Natural Earth, 1:10 M)
 ```
 
 ## Appréhender les objets
@@ -118,12 +118,12 @@ commandes utiles ; exécutez-les et lisez attentivement leurs sorties.
 
 ```{r}
 #| label: explorer-lan
-str(lan)                     # type et premières valeurs de chaque colonne
-head(lan)                    # premières lignes
-summary(lan)                 # résumé : min, max, moyenne, valeurs manquantes (NA)
-range(lan$year)              # période couverte
-length(unique(lan$faocode))  # nombre d'espèces
-table(lan$gear)              # nombre de lignes par engin
+str(lan) # type et premières valeurs de chaque colonne
+head(lan) # premières lignes
+summary(lan) # résumé : min, max, moyenne, valeurs manquantes (NA)
+range(lan$year) # période couverte
+length(unique(lan$faocode)) # nombre d'espèces
+table(lan$gear) # nombre de lignes par engin
 ```
 
 | Variable | Signification | Unité |
@@ -142,9 +142,9 @@ table(lan$gear)              # nombre de lignes par engin
 ```{r}
 #| label: explorer-autres
 str(lan_rect)
-sort(unique(lan_rect$icesrect))  # rectangles statistiques présents
-head(ref_engin)                  # correspondance code -> nom de l'engin
-head(ref_espece)                 # correspondance code FAO -> nom de l'espèce
+sort(unique(lan_rect$icesrect)) # rectangles statistiques présents
+head(ref_engin) # correspondance code -> nom de l'engin
+head(ref_espece) # correspondance code FAO -> nom de l'espèce
 ```
 
 Les objets cartographiques sont des tableaux de classe **`sf`** (*simple
@@ -154,11 +154,11 @@ features*) : une colonne `geometry` contient les polygones.
 #| label: explorer-sf
 #| fig-height: 4
 class(rect)
-rect                       # 15 rectangles statistiques de la division 7d
-st_crs(rect)$epsg          # système de coordonnées : 4326 = longitude/latitude (WGS84)
-plot(st_geometry(rect))    # tracé rapide des rectangles
+rect # 15 rectangles statistiques de la division 7d
+st_crs(rect)$epsg # système de coordonnées : 4326 = longitude/latitude (WGS84)
+plot(st_geometry(rect)) # tracé rapide des rectangles
 plot(st_geometry(div), border = "blue", lwd = 2, add = TRUE)
-plot(st_geometry(cote), col = "grey85", border = "grey40", add = TRUE)  # terres
+plot(st_geometry(cote), col = "grey85", border = "grey40", add = TRUE) # terres
 ```
 
 ## À vous
@@ -187,18 +187,22 @@ français. On joint les deux tableaux avec `merge()` sur le code FAO.
 #| label: top-especes
 #| fig-height: 7
 tot_esp <- aggregate(totalweight ~ faocode, data = lan, FUN = sum)
-tot_esp <- merge(tot_esp, ref_espece, by.x = "faocode", by.y = "ESP_COD_FAO",
-                 all.x = TRUE)
+tot_esp <- merge(
+    tot_esp,
+    ref_espece,
+    by.x = "faocode",
+    by.y = "ESP_COD_FAO",
+    all.x = TRUE
+)
 tot_esp <- tot_esp[order(tot_esp$totalweight, decreasing = TRUE), ]
 top25 <- head(tot_esp, 25)
 # étiquette : nom français suivi du code FAO, par exemple « Dorade grise (BRB) »
 top25$etiquette <- paste0(top25$ESP_LIB_FAO_FRANCAIS, " (", top25$faocode, ")")
-ggplot(top25, aes(x = reorder(etiquette, totalweight),
-                  y = totalweight / 1e6)) +
-  geom_col(fill = "#0032C8") +
-  coord_flip() +
-  labs(x = NULL, y = "Débarquements cumulés 2000-2026 (milliers de tonnes)") +
-  theme_minimal()
+ggplot(top25, aes(x = reorder(etiquette, totalweight), y = totalweight / 1e6)) +
+    geom_col(fill = "#0032C8") +
+    coord_flip() +
+    labs(x = NULL, y = "Débarquements cumulés 2000-2026 (milliers de tonnes)") +
+    theme_minimal()
 ```
 
 ## À vous
@@ -227,7 +231,7 @@ de changer cette ligne et de recompiler.
 ```{r}
 #| label: solution-espece
 ref_espece[grepl("Dorade", ref_espece$ESP_LIB_FAO_FRANCAIS), ]
-espece_ex <- "BRB"   # dorade grise ou griset (Spondyliosoma cantharus)
+espece_ex <- "BRB" # dorade grise ou griset (Spondyliosoma cantharus)
 sp_ex <- lan[lan$faocode == espece_ex & lan$year < 2026, ]
 sp_rect_ex <- lan_rect[lan_rect$faocode == espece_ex & lan_rect$year < 2026, ]
 nom_espece_ex <- ref_espece$ESP_LIB_FAO_FRANCAIS[ref_espece$ESP_COD_FAO == espece_ex]
@@ -266,11 +270,14 @@ cas pour comparer les métiers.
 annuel_ex <- aggregate(totalweight ~ year, data = sp_ex, FUN = sum)
 annuel_ex$tonnes <- annuel_ex$totalweight / 1000
 ggplot(annuel_ex, aes(year, tonnes)) +
-  geom_line(colour = "#0032C8") +
-  geom_point(colour = "#0032C8") +
-  labs(x = "Année", y = "Débarquements (t)",
-       title = paste("Débarquements annuels :", nom_espece_ex)) +
-  theme_minimal()
+    geom_line(colour = "#0032C8") +
+    geom_point(colour = "#0032C8") +
+    labs(
+        x = "Année",
+        y = "Débarquements (t)",
+        title = paste("Débarquements annuels :", nom_espece_ex)
+    ) +
+    theme_minimal()
 annee_max_ex <- annuel_ex$year[which.max(annuel_ex$tonnes)]
 t_2025_ex <- round(annuel_ex$tonnes[annuel_ex$year == 2025])
 ```
@@ -311,19 +318,30 @@ Le code de l'engin est peu parlant : on ajoute son nom avec le référentiel
 #| label: solution-engin
 #| fig-height: 4.5
 par_engin_ex <- aggregate(totalweight ~ gear, data = sp_ex, FUN = sum)
-par_engin_ex <- merge(par_engin_ex, ref_engin, by.x = "gear", by.y = "ENGIN_COD",
-                   all.x = TRUE)
+par_engin_ex <- merge(
+    par_engin_ex,
+    ref_engin,
+    by.x = "gear",
+    by.y = "ENGIN_COD",
+    all.x = TRUE
+)
 par_engin_ex <- par_engin_ex[order(par_engin_ex$totalweight, decreasing = TRUE), ]
-par_engin_ex$part <- round(100 * par_engin_ex$totalweight / sum(par_engin_ex$totalweight), 1)
+par_engin_ex$part <- round(
+    100 * par_engin_ex$totalweight / sum(par_engin_ex$totalweight),
+    1
+)
 head(par_engin_ex[, c("gear", "ENGIN_LIB", "part")], 6)
 
 top4_ex <- head(par_engin_ex$gear, 4)
-engin_an_ex <- aggregate(totalweight ~ year + gear, data = sp_ex[sp_ex$gear %in% top4_ex, ],
-                      FUN = sum)
+engin_an_ex <- aggregate(
+    totalweight ~ year + gear,
+    data = sp_ex[sp_ex$gear %in% top4_ex, ],
+    FUN = sum
+)
 ggplot(engin_an_ex, aes(year, totalweight / 1000, fill = gear)) +
-  geom_col() +
-  labs(x = "Année", y = "Débarquements (t)", fill = "Engin") +
-  theme_minimal()
+    geom_col() +
+    labs(x = "Année", y = "Débarquements (t)", fill = "Engin") +
+    theme_minimal()
 ```
 
 La dorade grise est surtout débarquée par les chaluts de fond à panneaux
@@ -372,15 +390,15 @@ par_rect_ex <- aggregate(totalweight ~ year + icesrect, data = sp_rect_ex, FUN =
 par_rect_ex$tonnes <- par_rect_ex$totalweight / 1000
 carte_ex <- merge(rect, par_rect_ex, by.x = "offname", by.y = "icesrect")
 ggplot() +
-  geom_sf(data = carte_ex, aes(fill = tonnes), colour = "white", linewidth = 0.2) +
-  geom_sf(data = div, fill = NA, colour = "#0032C8", linewidth = 0.4) +
-  geom_sf(data = cote, fill = "grey85", colour = "grey40", linewidth = 0.2) +  # terres par-dessus
-  scale_fill_viridis_c(name = "Débarquements (t)", trans = "sqrt") +
-  coord_sf(xlim = c(-2, 2.6), ylim = c(49, 51.1), expand = FALSE) +   # cadrage sur les rectangles
-  facet_wrap(~ year, ncol = 6) +
-  guides(fill = guide_colourbar(barwidth = 15)) +
-  theme_void() +
-  theme(legend.position = "bottom")
+    geom_sf(data = carte_ex, aes(fill = tonnes), colour = "white", linewidth = 0.2) +
+    geom_sf(data = div, fill = NA, colour = "#0032C8", linewidth = 0.4) +
+    geom_sf(data = cote, fill = "grey85", colour = "grey40", linewidth = 0.2) + # terres par-dessus
+    scale_fill_viridis_c(name = "Débarquements (t)", trans = "sqrt") +
+    coord_sf(xlim = c(-2, 2.6), ylim = c(49, 51.1), expand = FALSE) + # cadrage sur les rectangles
+    facet_wrap(~year, ncol = 6) +
+    guides(fill = guide_colourbar(barwidth = 15)) +
+    theme_void() +
+    theme(legend.position = "bottom")
 ```
 
 Les débarquements de dorade grise proviennent surtout du centre de la
@@ -435,14 +453,17 @@ par engin**.
 #| label: solution-cpue
 #| fig-height: 4
 top3_ex <- head(par_engin_ex$gear, 3)
-cpue_ex <- aggregate(cbind(totalweight, nbtrip) ~ year + gear,
-                  data = sp_ex[sp_ex$gear %in% top3_ex, ], FUN = sum)
+cpue_ex <- aggregate(
+    cbind(totalweight, nbtrip) ~ year + gear,
+    data = sp_ex[sp_ex$gear %in% top3_ex, ],
+    FUN = sum
+)
 cpue_ex$kg_maree <- cpue_ex$totalweight / cpue_ex$nbtrip
 ggplot(cpue_ex, aes(year, kg_maree, colour = gear)) +
-  geom_line(linewidth = 1) +
-  geom_point() +
-  labs(x = "Année", y = "CPUE (kg par marée)", colour = "Engin") +
-  theme_minimal()
+    geom_line(linewidth = 1) +
+    geom_point() +
+    labs(x = "Année", y = "CPUE (kg par marée)", colour = "Engin") +
+    theme_minimal()
 ```
 
 Les niveaux de CPUE diffèrent beaucoup d'un engin à l'autre. Les chaluts
