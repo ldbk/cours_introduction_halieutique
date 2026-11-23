@@ -1,0 +1,1157 @@
+---
+# ---------------------------------------------------------------------------
+# Présentation — Le modèle de production de Schaefer
+# Durée visée : 1 heure 15 (suivie des TD 4, 5 et 6 : applications/04_modele_*.qmd)
+# Fichiers requis : custom.scss, title-slide.html, images/ (logos + fond), img/
+# Dépendance R : ggplot2 (figures calculées à la compilation)
+# Rendu : quarto render 04_modele.qmd
+# ---------------------------------------------------------------------------
+title: "Introduction à l'halieutique"
+subtitle: "Le modèle de production de Schaefer"
+author: "Laurent Dubroca"
+cover-date: "24/11/2026"
+lang: fr
+bibliography: 04_modele.bib
+#bibliography: /Users/moi/Zotero/exportdb/MyLibrary.bib
+title-slide-attributes:
+  data-state: ifr-cover
+execute:
+  echo: false
+  warning: false
+  message: false
+format:
+  revealjs:
+    theme: [default, custom.scss]
+    logo: images/logo-total.png
+    template-partials:
+      - title-slide.html
+    footer: "Introduction à l'halieutique — M2 Sciences de la Mer — CREC Luc-sur-Mer, 23-24 novembre 2026"
+    slide-number: c/t
+    include-after-body: print-notes.html
+    transition: fade
+    background-transition: fade
+    center: false
+    width: 1280
+    height: 720
+    embed-resources: true
+    controls: true
+    hash: true
+    preview-links: auto
+    fig-align: center
+---
+
+```{r}
+#| label: setup
+library(ggplot2)
+
+ifr_bleu_fonce <- "#0032C8"
+ifr_bleu <- "#0064FF"
+ifr_jaune <- "#FFC000"
+ifr_rouge <- "#D7263D"
+theme_set(theme_minimal(base_size = 18))
+
+# Simulation du modèle de Schaefer discret, à capture constante (C)
+# ou à mortalité par pêche constante (F)
+schaefer_sim <- function(r, K, B0, C = 0, F = NULL, n = 50) {
+  B <- numeric(n)
+  B[1] <- B0
+  for (t in 1:(n - 1)) {
+    Y <- if (is.null(F)) C else F * B[t]
+    B[t + 1] <- max(B[t] + r * B[t] * (1 - B[t] / K) - Y, 0)
+  }
+  data.frame(annee = 1:n, B = B)
+}
+
+# Germon de l'Atlantique Sud (Polacheck et al. 1993)
+# captures en milliers de tonnes, CPUE en kg pour 100 hameçons
+germon <- data.frame(
+  annee = 1967:1989,
+  capture = c(15.9, 25.7, 28.5, 23.7, 25.0, 33.3, 28.2, 19.7, 17.5, 19.3,
+              21.6, 23.1, 22.5, 22.5, 23.6, 29.1, 14.4, 13.2, 28.4, 34.6,
+              37.5, 25.9, 25.3),
+  pue = c(61.89, 78.98, 55.59, 44.61, 56.89, 38.27, 33.84, 36.13, 41.95,
+          36.63, 36.33, 38.82, 34.32, 37.64, 34.01, 32.16, 26.88, 36.61,
+          30.07, 30.75, 23.36, 22.36, 21.91)
+)
+
+# Somme des carrés des résidus (en log) entre CPUE observée et prédite
+# Hypothèse : le stock est vierge en 1967 (B1 = K)
+sce_schaefer <- function(par, data, detail = FALSE) {
+  r <- exp(par[1]); K <- exp(par[2]); q <- exp(par[3])
+  n <- nrow(data)
+  B <- numeric(n)
+  B[1] <- K
+  for (t in 1:(n - 1)) {
+    B[t + 1] <- max(B[t] + r * B[t] * (1 - B[t] / K) - data$capture[t], 1e-3)
+  }
+  res <- log(data$pue) - log(q * B)
+  if (detail) return(list(r = r, K = K, q = q, B = B, pue_pred = q * B))
+  sum(res^2)
+}
+ajust <- optim(log(c(0.3, 250, 0.25)), sce_schaefer, data = germon,
+               control = list(maxit = 5000))
+ajust <- optim(ajust$par, sce_schaefer, data = germon, method = "BFGS")
+fit <- sce_schaefer(ajust$par, germon, detail = TRUE)
+msy <- fit$r * fit$K / 4
+bmsy <- fit$K / 2
+fmsy <- fit$r / 2
+```
+
+## Plan
+
+1. **Vocabulaire** : stock, biomasse, production, effort, CPUE
+2. **Du modèle logistique au modèle de Schaefer** : les équations
+3. **Équilibre et points de référence** : MSY, B~MSY~, F~MSY~
+4. **Ajuster le modèle aux données** : un exemple réel
+5. **Limites et généralisations** : de Fox à SPiCT
+
+::: {.callout-box}
+**Objectif** : comprendre ce que fait un modèle de production, pour pouvoir le simuler puis l'ajuster sous R dans les TD.
+:::
+
+::: {.notes}
+Ce cours présente le modèle d'évaluation de stock le plus simple et le plus
+ancien : le modèle de production de Schaefer. Il est aussi appelé modèle
+global, modèle de dynamique de la biomasse ou, en anglais, *surplus production
+model*.
+
+Il ne décrit que la biomasse totale d'un stock, sans distinguer les âges ou les
+tailles. Cette simplicité en fait un excellent outil pédagogique : avec
+seulement deux paramètres biologiques, il permet de comprendre comment la pêche
+modifie l'abondance d'un stock, ce qu'est le rendement maximal durable (MSY),
+et comment on estime l'état d'un stock à partir de données de captures et
+d'abondance. Il reste utilisé aujourd'hui, notamment pour les thonidés et pour
+les stocks pauvres en données.
+
+Nous commencerons par le vocabulaire, puis les équations du modèle et leurs
+conséquences à l'équilibre. Nous verrons ensuite comment l'ajuster à des
+données réelles. Enfin, nous présenterons ses limites et les développements
+récents. Les TD 4 et 5 (`applications/04_modele_theorie_application.qmd` et
+`applications/04_modele_ajustement_application.qmd`) mettent tout cela en
+pratique.
+:::
+
+## Vocabulaire {background-color="#0032C8" .chapter-slide}
+
+<span class="chapter-number">01.</span>
+
+Les mots de la dynamique des stocks
+
+## Le stock et sa biomasse
+
+::: {.columns}
+::: {.column width="55%"}
+- **Stock** : unité de gestion d'une population exploitée (espèce, zone)
+- **Biomasse** $B$ : masse totale du stock (en tonnes)
+- **Production biologique** : variation naturelle de la biomasse, $\frac{dB}{dt}$, résultat de la **reproduction**, de la **croissance** et de la **mortalité naturelle**
+- **Productivité** : production par unité de biomasse, $\frac{1}{B}\frac{dB}{dt}$
+- **Production excédentaire** (*surplus production*) : la part de la production qui peut être prélevée sans faire baisser le stock
+:::
+::: {.column width="45%"}
+::: {.callout-box}
+**Équation de Russell (1931)**
+
+$$
+B_{t+1} = B_t + \underbrace{R_t + G_t - M_t}_{\text{production}} - C_t
+$$
+
+$R$ recrutement, $G$ croissance, $M$ mortalité naturelle, $C$ captures
+:::
+
+Le modèle de Schaefer résume la production en **une seule fonction de $B$**.
+:::
+:::
+
+::: {.notes}
+Un stock est la partie d'une population exploitée que l'on considère comme une
+unité de gestion, avec ses propres limites géographiques. Sa biomasse $B$ est
+la masse totale des individus qui le composent.
+
+D'une année sur l'autre, la biomasse augmente grâce à l'arrivée de nouveaux
+individus (le recrutement $R$) et à la croissance en poids des individus
+présents ($G$). Elle diminue sous l'effet de la mortalité naturelle ($M$) et
+des captures ($C$). C'est l'équation de bilan proposée par Russell en 1931.
+
+La production biologique est le bilan net de la reproduction, de la croissance
+et de la mortalité naturelle. Si les captures sont égales à cette production,
+la biomasse reste constante : c'est l'idée de production excédentaire, la part
+de la production que l'on peut prélever durablement.
+
+Les modèles plus complexes décrivent séparément le recrutement, la croissance
+et la mortalité par âge. Le modèle de Schaefer fait un choix radical : il
+résume toute la production par une seule fonction de la biomasse. C'est pour
+cela qu'on l'appelle aussi « modèle global » [@gascuel2008].
+:::
+
+## Captures, effort et abondance
+
+::: {.columns}
+::: {.column width="55%"}
+- **Capture** $C$ (ou $Y$) : biomasse prélevée par la pêche
+- **Effort de pêche** $E$ : quantité de pêche déployée (jours de mer, hameçons...)
+- **CPUE** (capture par unité d'effort) : $U = C / E$
+- **Capturabilité** $q$ : part du stock capturée par une unité d'effort
+- **Mortalité par pêche** $F = qE$ : taux de prélèvement
+
+$$
+C = F\,B = q\,E\,B \quad\Rightarrow\quad U = \frac{C}{E} = q\,B
+$$
+:::
+::: {.column width="45%"}
+::: {.needs-box}
+**L'idée clé**
+
+La biomasse d'un stock ne s'observe pas directement.
+
+Un **indice d'abondance** $I = q\,B$ (CPUE commerciale ou campagne scientifique) suit ses **variations relatives**.
+:::
+:::
+:::
+
+::: {.notes}
+La capture est la biomasse retirée du stock par la pêche. L'effort de pêche
+mesure l'intensité de l'activité : nombre de jours en mer, d'heures de
+chalutage, d'hameçons posés. La capture par unité d'effort (CPUE, de l'anglais
+*catch per unit effort*) est le rapport entre les deux.
+
+On suppose que chaque unité d'effort capture une fraction constante $q$ du
+stock : c'est la capturabilité. La mortalité par pêche $F = qE$ est alors
+proportionnelle à l'effort, et la capture vaut $C = qEB$. On en déduit que la
+CPUE est proportionnelle à la biomasse : $U = qB$.
+
+C'est fondamental, car on ne peut presque jamais mesurer directement la
+biomasse d'un stock. On dispose en revanche d'indices d'abondance : la CPUE
+d'une flottille commerciale ou l'indice d'une campagne scientifique. Si
+l'hypothèse $I = qB$ est vraie, ces indices suivent les variations de la
+biomasse à un facteur $q$ près. Cette hypothèse est fragile : la capturabilité
+peut changer avec les progrès techniques ou le comportement des pêcheurs et
+des poissons. Une CPUE stable peut ainsi masquer une baisse du stock si les
+pêcheurs deviennent plus efficaces.
+:::
+
+## Qu'est-ce qu'un modèle ?
+
+::: {.columns}
+::: {.column width="55%"}
+- Une **représentation simplifiée** d'un système, qui retient les processus jugés essentiels
+- **Variables** : évoluent dans le temps ($B_t$, $C_t$)
+- **Paramètres** : constantes à estimer ($r$, $K$, $q$)
+- **Déterministe** ou **stochastique**, **continu** ou **discret**
+:::
+::: {.column width="45%"}
+::: {.callout-box}
+« Tous les modèles sont faux, mais certains sont utiles. »
+
+G. Box
+:::
+
+Un modèle qui n'inclut pas le climat ne suppose pas que le climat n'a pas d'effet : il raisonne dans des **conditions moyennes** [@gascuel2008].
+:::
+:::
+
+::: {.notes}
+Un modèle est une représentation simplifiée de la réalité. Modéliser, c'est
+choisir les processus que l'on juge essentiels pour répondre à une question,
+et laisser les autres de côté.
+
+On distingue les variables, qui évoluent dans le temps (la biomasse, les
+captures), et les paramètres, des constantes qui caractérisent le système et
+que l'on cherche à estimer (ici le taux de croissance $r$, la capacité de
+charge $K$, la capturabilité $q$). Un modèle peut être déterministe (une seule
+trajectoire possible) ou stochastique (avec de l'aléa), continu ou discret
+dans le temps.
+
+Comme le rappelle Didier Gascuel, ne pas inclure un facteur dans un modèle ne
+revient pas à nier son influence. Le modèle de Schaefer ne contient pas le
+climat : il décrit le fonctionnement du stock dans des conditions moyennes
+[@gascuel2008]. Pour des ressources très dépendantes de l'environnement,
+cette hypothèse devient problématique, comme nous le verrons.
+
+Pour une introduction à la modélisation en halieutique avec R, voir
+@haddon2020.
+:::
+
+## Du modèle logistique au modèle de Schaefer {background-color="#0032C8" .chapter-slide}
+
+<span class="chapter-number">02.</span>
+
+Les équations
+
+## Une histoire en trois étapes
+
+::: {.columns}
+::: {.column width="55%"}
+- **1838, Verhulst** : croissance **logistique** d'une population limitée par les ressources [@verhulst1838]
+- **1935, Graham** : la pêche est durable si elle prélève l'excédent de production ; celui-ci est maximal à la **moitié** de la capacité de charge [@graham1935]
+- **1954-1957, Schaefer** : un modèle ajustable aux données de **captures et d'effort**, appliqué au **thon albacore** du Pacifique Est [@schaefer1954; @scheafer1957]
+:::
+::: {.column width="45%"}
+::: {.callout-box}
+**Milner B. Schaefer** (1912-1970)
+
+Halieute américain, directeur scientifique de la Commission interaméricaine du thon tropical (IATTC).
+
+Son modèle fonde la notion de **rendement maximal durable** (MSY).
+:::
+:::
+:::
+
+::: {.notes}
+Le modèle de Schaefer repose sur une idée ancienne. En 1838, le mathématicien
+belge Pierre-François Verhulst propose l'équation logistique : une population
+croît d'abord rapidement, puis de plus en plus lentement à mesure qu'elle
+approche d'une limite fixée par les ressources du milieu [@verhulst1838].
+
+En 1935, le Britannique Michael Graham applique cette idée à la pêche. Une
+pêcherie est durable si elle ne prélève que l'excédent de production du stock.
+Cet excédent est maximal quand le stock est à la moitié de sa taille vierge
+[@graham1935].
+
+Dans les années 1950, Milner Schaefer formalise cette théorie et montre comment
+estimer les paramètres du modèle à partir des statistiques de captures et
+d'effort de pêche. Il l'applique au thon albacore du Pacifique Est, pour la
+Commission interaméricaine du thon tropical [@schaefer1954; @scheafer1957]. Le
+modèle devient alors l'outil de référence pour recommander des niveaux
+d'effort de pêche, et le rendement maximal durable (MSY) s'impose comme
+objectif de gestion.
+:::
+
+## La croissance logistique
+
+```{r}
+#| label: g-logistique
+#| fig-width: 12
+#| fig-height: 4.6
+r0 <- 0.5; K0 <- 1000
+traj <- schaefer_sim(r0, K0, 20, n = 30)
+p1 <- ggplot(traj, aes(annee, B)) +
+  geom_hline(yintercept = c(K0, K0 / 2), linetype = c("dashed", "dotted"), colour = "grey50") +
+  geom_line(colour = ifr_bleu_fonce, linewidth = 1.2) +
+  annotate("text", x = 3, y = K0 * 1.05, label = "K", size = 6) +
+  annotate("text", x = 3, y = K0 / 2 * 1.1, label = "K/2", size = 6) +
+  labs(x = "Années", y = "Biomasse B", title = "a) Biomasse au cours du temps")
+prod <- data.frame(B = seq(0, K0, length.out = 200))
+prod$P <- r0 * prod$B * (1 - prod$B / K0)
+p2 <- ggplot(prod, aes(B, P)) +
+  geom_line(colour = ifr_bleu_fonce, linewidth = 1.2) +
+  geom_vline(xintercept = K0 / 2, linetype = "dotted", colour = "grey50") +
+  annotate("point", x = K0 / 2, y = r0 * K0 / 4, size = 4, colour = ifr_jaune) +
+  annotate("text", x = K0 / 2, y = r0 * K0 / 4 * 1.08, label = "rK/4", size = 6) +
+  labs(x = "Biomasse B", y = "Production dB/dt", title = "b) Production en fonction de B")
+grid::grid.newpage()
+grid::pushViewport(grid::viewport(layout = grid::grid.layout(1, 2)))
+print(p1, vp = grid::viewport(layout.pos.row = 1, layout.pos.col = 1))
+print(p2, vp = grid::viewport(layout.pos.row = 1, layout.pos.col = 2))
+```
+
+$$
+\frac{dB}{dt} = r\,B\left(1 - \frac{B}{K}\right)
+$$
+
+::: {.notes}
+L'équation logistique décrit l'évolution de la biomasse en l'absence de pêche.
+Le terme $rB$ correspond à une croissance proportionnelle à la biomasse. Le
+facteur $(1 - B/K)$ freine cette croissance quand la biomasse approche de
+$K$.
+
+Le paramètre $r$ est le taux intrinsèque d'accroissement : c'est la
+productivité du stock quand il est très peu abondant, sans compétition. Il est
+élevé pour les espèces à vie courte et à maturité précoce (sardine, anchois),
+faible pour les espèces longévives (requins, poissons profonds). Le paramètre
+$K$ est la capacité de charge (*carrying capacity*) : la biomasse maximale que
+le milieu peut entretenir, atteinte par le stock vierge.
+
+La figure de gauche montre la courbe en S typique : partie d'une faible
+biomasse, la population croît d'abord vite, puis ralentit et se stabilise à
+$K$. La figure de droite est essentielle pour la suite. La production
+biologique est une parabole : nulle quand le stock est vide (personne pour se
+reproduire), nulle aussi quand il est à $K$ (la compétition annule la
+croissance), et maximale à $K/2$, où elle vaut $rK/4$.
+:::
+
+## La densité-dépendance
+
+::: {.columns}
+::: {.column width="50%"}
+```{r}
+#| label: g-productivite
+#| fig-width: 6
+#| fig-height: 4.8
+prod$prodind <- r0 * (1 - prod$B / K0)
+ggplot(prod, aes(B, prodind)) +
+  geom_line(colour = ifr_bleu_fonce, linewidth = 1.2) +
+  annotate("text", x = 60, y = r0 * 1.04, label = "r", size = 6) +
+  annotate("text", x = K0 * 0.95, y = 0.04, label = "K", size = 6) +
+  labs(x = "Biomasse B", y = "Productivité (1/B) dB/dt")
+```
+:::
+::: {.column width="50%"}
+- La **productivité** par unité de biomasse **diminue linéairement** quand la biomasse augmente
+- Causes : compétition pour la nourriture et l'espace, croissance individuelle plus lente, cannibalisme, prédation...
+- Conséquence : **un stock pêché devient plus productif**
+
+::: {.callout-box}
+C'est la **compensation** qui rend une pêche durable possible.
+:::
+:::
+:::
+
+::: {.notes}
+Divisons la production par la biomasse : on obtient la productivité, la
+production par tonne de poisson. Dans le modèle logistique, elle diminue en
+ligne droite, de $r$ quand le stock est presque vide à zéro quand il atteint
+$K$.
+
+C'est la densité-dépendance. Quand le stock est abondant, les individus sont en
+compétition pour la nourriture et l'espace : leur croissance ralentit, leur
+mortalité naturelle augmente, leur reproduction est moins efficace. Quand la
+pêche réduit l'abondance, cette compétition diminue et chaque individu devient
+plus productif.
+
+Cette compensation est la base biologique de l'exploitation durable. Sans
+elle, toute capture ferait baisser indéfiniment l'abondance. Grâce à elle, un
+stock réduit par la pêche peut se stabiliser à un niveau où sa production
+compense exactement les prélèvements.
+:::
+
+## Le modèle de Schaefer
+
+::: {.columns}
+::: {.column width="55%"}
+**En temps continu**
+
+$$
+\frac{dB}{dt} = r\,B\left(1 - \frac{B}{K}\right) - C
+$$
+
+**En temps discret** (pas annuel), forme utilisée dans les TD
+
+$$
+B_{t+1} = B_t + r\,B_t\left(1 - \frac{B_t}{K}\right) - C_t
+$$
+
+**Observation** : $\quad I_t = q\,B_t$
+:::
+::: {.column width="45%"}
+::: {.callout-box}
+**Exemple de calcul**
+
+$B_t = 10$ t, $r = 0{,}2$, $K = 100$ t, $C_t = 1$ t
+
+$B_{t+1} = 10 + 0{,}2 \times 10 \times (1 - \tfrac{10}{100}) - 1$
+
+$B_{t+1} = 10 + 1{,}8 - 1 = 10{,}8$ t
+:::
+
+**Paramètres** : $r$, $K$, $q$ (et $B_1$, la biomasse initiale)
+:::
+:::
+
+::: {.notes}
+Le modèle de Schaefer ajoute simplement les captures à l'équation logistique :
+la variation de biomasse est égale à la production biologique moins ce que
+prélève la pêche.
+
+Dans la pratique, les données de pêche sont annuelles : on utilise donc une
+version discrète du modèle. La biomasse de l'année suivante est la biomasse de
+l'année en cours, plus la production de l'année, moins les captures de
+l'année. C'est cette forme que vous programmerez dans les TD.
+
+Le modèle est complété par une équation d'observation, qui relie la biomasse
+(inobservable) à un indice d'abondance mesuré : $I_t = qB_t$.
+
+Prenons un exemple chiffré : une biomasse de 10 tonnes, un taux $r$ de 0,2,
+une capacité de charge de 100 tonnes et une capture d'une tonne. La production
+de l'année vaut $0{,}2 \times 10 \times 0{,}9 = 1{,}8$ tonne. La biomasse de
+l'année suivante est donc $10 + 1{,}8 - 1 = 10{,}8$ tonnes. Le stock augmente,
+car on prélève moins que sa production.
+:::
+
+## Le modèle discret peut devenir chaotique
+
+```{r}
+#| label: g-chaos
+#| fig-width: 12
+#| fig-height: 4.8
+d_chaos <- do.call(rbind, lapply(c(0.5, 1.8, 2.5, 2.9), function(rr)
+  cbind(schaefer_sim(rr, 1000, 100, n = 40), r = paste("r =", rr))))
+ggplot(d_chaos, aes(annee, B)) +
+  geom_hline(yintercept = 1000, linetype = "dashed", colour = "grey60") +
+  geom_line(colour = ifr_bleu_fonce) +
+  geom_point(colour = ifr_bleu_fonce, size = 1) +
+  facet_wrap(~ r, nrow = 1) +
+  labs(x = "Années", y = "Biomasse B")
+```
+
+::: {.small}
+Sans pêche, K = 1000. Au-delà de r ≈ 2, la biomasse oscille, puis devient chaotique [@may1976].
+:::
+
+::: {.notes}
+La version discrète du modèle a un comportement surprenant, étudié par Robert
+May en 1976 [@may1976]. Pour des valeurs modérées de $r$, la biomasse rejoint
+doucement la capacité de charge. Pour $r$ proche de 2, elle dépasse $K$ puis
+oscille avant de se stabiliser. Au-delà de 2, elle oscille indéfiniment entre
+deux, quatre, huit valeurs... puis, vers $r = 2{,}6$ et au-delà, elle devient
+chaotique : la trajectoire semble aléatoire alors que le modèle est
+parfaitement déterministe.
+
+Ces valeurs de $r$ sont irréalistes pour la plupart des stocks de poissons
+(on a souvent $r$ entre 0,1 et 1). Mais cet exemple rappelle qu'un modèle très
+simple peut produire des dynamiques complexes. Vous explorerez ce comportement
+dans le TD 4 (`applications/04_modele_theorie_application.qmd`), en
+programmant vous-même le modèle et en comptant le nombre de valeurs prises
+par la biomasse pour différentes valeurs de $r$.
+:::
+
+## Équilibre et points de référence {background-color="#0032C8" .chapter-slide}
+
+<span class="chapter-number">03.</span>
+
+Le rendement maximal durable
+
+## À l'équilibre
+
+::: {.columns}
+::: {.column width="55%"}
+À **mortalité par pêche constante** $F$, le stock tend vers un équilibre où **captures = production** :
+
+$$
+r\,B^*\left(1 - \frac{B^*}{K}\right) = F\,B^*
+\;\Rightarrow\;
+B^* = K\left(1 - \frac{F}{r}\right)
+$$
+
+**Capture équilibrée** :
+
+$$
+C^* = F\,B^* = F\,K\left(1 - \frac{F}{r}\right)
+$$
+:::
+::: {.column width="45%"}
+**Points de référence** (on annule $\frac{dC^*}{dF}$) :
+
+| | Schaefer |
+|---|---|
+| $B_{MSY}$ | $K/2$ |
+| $F_{MSY}$ | $r/2$ |
+| $MSY$ | $rK/4$ |
+| $E_{MSY}$ | $r/(2q)$ |
+
+: {tbl-colwidths="[40,60]"}
+:::
+:::
+
+::: {.notes}
+Supposons que l'on maintienne une mortalité par pêche constante $F$ pendant
+longtemps. Le stock finit par atteindre un équilibre, où la biomasse ne change
+plus : la production biologique compense exactement les captures. En
+résolvant cette égalité, on trouve la biomasse d'équilibre $B^* = K(1 - F/r)$.
+Elle diminue quand $F$ augmente et s'annule quand $F$ atteint $r$ : au-delà, le
+stock disparaît.
+
+La capture équilibrée est le produit de $F$ par $B^*$. C'est une parabole en
+$F$. En dérivant par rapport à $F$ et en annulant la dérivée, on trouve son
+maximum : la mortalité par pêche $F_{MSY} = r/2$, qui maintient le stock à
+$B_{MSY} = K/2$ et donne la capture maximale durable $MSY = rK/4$. Comme
+$F = qE$, l'effort correspondant est $E_{MSY} = r/(2q)$.
+
+Le TD 5 (`04_modele_ajustement_application`) détaille la démonstration de
+$B_{MSY}$ et du $MSY$ à partir de la forme continue du modèle. En français, on parle de
+rendement maximal durable (RMD) ou de production maximale équilibrée
+[@gascuel2008].
+:::
+
+## Capture et CPUE en fonction de l'effort
+
+```{r}
+#| label: g-equilibre
+#| fig-width: 12
+#| fig-height: 4.8
+r0 <- 0.4; K0 <- 1000; q0 <- 0.001
+eq <- data.frame(E = seq(0, r0 / q0, length.out = 200))
+eq$F <- q0 * eq$E
+eq$B <- K0 * (1 - eq$F / r0)
+eq$C <- eq$F * eq$B
+eq$U <- q0 * eq$B
+emsy <- r0 / (2 * q0)
+p1 <- ggplot(eq, aes(E, C)) +
+  geom_line(colour = ifr_bleu_fonce, linewidth = 1.2) +
+  geom_vline(xintercept = emsy, linetype = "dotted") +
+  annotate("text", x = emsy, y = r0 * K0 / 4 * 1.08, label = "MSY", size = 6) +
+  annotate("text", x = emsy * 0.5, y = 15, label = "sous-exploitation", size = 5) +
+  annotate("text", x = emsy * 1.5, y = 15, label = "surexploitation", size = 5, colour = ifr_rouge) +
+  labs(x = "Effort de pêche E", y = "Capture équilibrée", title = "a) Capture")
+p2 <- ggplot(eq, aes(E, U)) +
+  geom_line(colour = ifr_bleu_fonce, linewidth = 1.2) +
+  geom_vline(xintercept = emsy, linetype = "dotted") +
+  labs(x = "Effort de pêche E", y = "CPUE équilibrée", title = "b) Capture par unité d'effort")
+grid::grid.newpage()
+grid::pushViewport(grid::viewport(layout = grid::grid.layout(1, 2)))
+print(p1, vp = grid::viewport(layout.pos.row = 1, layout.pos.col = 1))
+print(p2, vp = grid::viewport(layout.pos.row = 1, layout.pos.col = 2))
+```
+
+::: {.small}
+Simulation avec r = 0,4, K = 1000 t, q = 0,001. Au-delà de E~MSY~, **plus d'effort donne moins de captures**.
+:::
+
+::: {.notes}
+Ces deux courbes sont la lecture classique du modèle global, exprimée en
+fonction de l'effort de pêche [@gascuel2008].
+
+La capture équilibrée (à gauche) augmente d'abord avec l'effort, atteint le
+MSY pour l'effort $E_{MSY}$, puis diminue. À droite de $E_{MSY}$, le stock est
+surexploité : augmenter l'effort fait baisser les captures à long terme. Un
+effort plus faible permettrait de pêcher autant, voire plus, avec moins de
+bateaux, moins de carburant et un stock plus abondant.
+
+La CPUE équilibrée (à droite) diminue linéairement avec l'effort, car elle est
+proportionnelle à la biomasse d'équilibre. Chaque unité d'effort rapporte
+d'autant moins que l'effort total est élevé. C'est pourquoi une pêcherie
+surexploitée est souvent aussi en difficulté économique.
+
+Ces courbes sont des prédictions à long terme. Quand l'effort change, le stock
+met plusieurs années à rejoindre son nouvel équilibre, et les captures
+observées pendant la transition ne sont pas sur la courbe.
+:::
+
+## Dynamique : effet de la pêche dans le temps
+
+```{r}
+#| label: g-scenarios
+#| fig-width: 12
+#| fig-height: 4.6
+r0 <- 0.4; K0 <- 1000
+dF <- do.call(rbind, lapply(c(0.1, 0.2, 0.35), function(f)
+  cbind(schaefer_sim(r0, K0, K0, F = f), scen = paste0("F = ", f))))
+dC <- do.call(rbind, lapply(c(80, 100, 110), function(cc)
+  cbind(schaefer_sim(r0, K0, K0, C = cc), scen = paste0("C = ", cc, " t"))))
+dC$scen <- factor(dC$scen, levels = paste0("C = ", c(80, 100, 110), " t"))
+p1 <- ggplot(dF, aes(annee, B, colour = scen)) +
+  geom_hline(yintercept = K0 / 2, linetype = "dotted") +
+  geom_line(linewidth = 1.2) +
+  scale_colour_manual(values = c(ifr_bleu, ifr_bleu_fonce, ifr_rouge)) +
+  ylim(0, K0) +
+  labs(x = "Années", y = "Biomasse B", colour = NULL,
+       title = "a) Mortalité par pêche constante") +
+  theme(legend.position = "bottom")
+p2 <- ggplot(dC, aes(annee, B, colour = scen)) +
+  geom_hline(yintercept = K0 / 2, linetype = "dotted") +
+  geom_line(linewidth = 1.2) +
+  scale_colour_manual(values = c(ifr_bleu, ifr_bleu_fonce, ifr_rouge)) +
+  ylim(0, K0) +
+  labs(x = "Années", y = "Biomasse B", colour = NULL,
+       title = "b) Capture constante") +
+  theme(legend.position = "bottom")
+grid::grid.newpage()
+grid::pushViewport(grid::viewport(layout = grid::grid.layout(1, 2)))
+print(p1, vp = grid::viewport(layout.pos.row = 1, layout.pos.col = 1))
+print(p2, vp = grid::viewport(layout.pos.row = 1, layout.pos.col = 2))
+```
+
+::: {.small}
+r = 0,4 et K = 1000 t, donc F~MSY~ = 0,2, B~MSY~ = 500 t et MSY = 100 t. Départ du stock vierge.
+:::
+
+::: {.notes}
+Ces simulations partent d'un stock vierge et appliquent différentes stratégies
+de pêche, avec $r = 0{,}4$ et $K = 1000$ tonnes. On a donc $F_{MSY} = 0{,}2$,
+$B_{MSY} = 500$ tonnes et $MSY = 100$ tonnes.
+
+À gauche, la mortalité par pêche est constante. Le stock rejoint toujours un
+équilibre : au-dessus de $B_{MSY}$ si $F < F_{MSY}$, en dessous si
+$F > F_{MSY}$. Avec $F = 0{,}35$, le stock se stabilise très bas, vers 125
+tonnes, mais ne disparaît pas, car les captures diminuent avec la biomasse.
+
+À droite, la capture est fixée en tonnes, quel que soit l'état du stock. Une
+capture de 80 tonnes, inférieure au MSY, est soutenable. Une capture égale au
+MSY fait tendre le stock lentement vers $B_{MSY}$, sans marge de sécurité. Une
+capture de 110 tonnes, à peine supérieure au MSY, conduit à l'effondrement du
+stock, car aucune biomasse ne peut produire durablement plus que le MSY.
+
+Leçon pour la gestion : un objectif de capture fixe est beaucoup plus risqué
+qu'un objectif de mortalité par pêche, surtout s'il est proche du MSY. Le TD 4
+reproduit ces scénarios. Il montre aussi qu'une capture inférieure au MSY,
+durable pour un stock vierge, peut faire s'effondrer un stock déjà réduit :
+avec ces paramètres et 80 tonnes de captures, il existe un équilibre instable
+vers 276 tonnes, en dessous duquel le stock ne se reconstitue plus.
+:::
+
+## Ajuster le modèle aux données {background-color="#0032C8" .chapter-slide}
+
+<span class="chapter-number">04.</span>
+
+Estimer r, K et q à partir de séries d'observations
+
+## Données et principe de l'ajustement
+
+::: {.columns}
+::: {.column width="55%"}
+**Données nécessaires**
+
+- une série de **captures** $C_t$ (de préférence depuis le début de la pêcherie)
+- une série d'**indice d'abondance** $I_t$ (CPUE ou campagne)
+
+**Principe** : chercher les paramètres $(r, K, q, B_1)$ qui rendent l'indice **prédit** $\hat I_t = q\,\hat B_t$ le plus proche de l'indice **observé** :
+
+$$
+\min_{r,K,q,B_1} \sum_t \left[\ln I_t - \ln(q\,\hat B_t)\right]^2
+$$
+:::
+::: {.column width="45%"}
+::: {.needs-box}
+**Trois approches historiques**
+
+- **Équilibre** : suppose le stock à l'équilibre chaque année ; surestime souvent le MSY, **à éviter**
+- **Linéarisation** : régression sur des données transformées ; structure d'erreur inadaptée
+- **Série temporelle** : simule la dynamique année après année ; la **méthode de référence** [@polacheck1993]
+:::
+:::
+:::
+
+::: {.notes}
+Pour appliquer le modèle à un stock réel, il faut estimer ses paramètres. On
+dispose généralement de deux séries : les captures annuelles et un indice
+d'abondance.
+
+La méthode de référence consiste à simuler la dynamique du stock année après
+année, à partir de valeurs candidates des paramètres et des captures
+observées. On calcule ainsi un indice prédit, que l'on compare à l'indice
+observé. Un algorithme d'optimisation (la fonction `optim()` de R, par
+exemple) cherche les valeurs des paramètres qui minimisent l'écart entre les
+deux, mesuré par la somme des carrés des résidus. On travaille sur le
+logarithme des indices, car leurs erreurs sont plutôt multiplicatives.
+
+C'est exactement la démarche du TD 5 (`04_modele_ajustement_application`),
+qui part d'une régression linéaire ajustée avec `optim()` pour arriver au
+modèle de Schaefer, d'abord sur des données simulées, puis sur les données
+du germon présentées ci-après.
+
+Les premières méthodes supposaient que le stock était à l'équilibre chaque
+année. C'est faux quand l'effort change, et cela conduit souvent à surestimer
+le MSY. Polacheck et ses collègues ont comparé ces méthodes : l'ajustement en
+série temporelle avec erreur d'observation donne les estimations les plus
+fiables [@polacheck1993].
+:::
+
+## Exemple : le germon de l'Atlantique Sud
+
+```{r}
+#| label: g-germon-donnees
+#| fig-width: 12
+#| fig-height: 4.6
+p1 <- ggplot(germon, aes(annee, capture)) +
+  geom_col(fill = ifr_bleu) +
+  labs(x = NULL, y = "Captures (milliers de t)", title = "a) Captures")
+p2 <- ggplot(germon, aes(annee, pue)) +
+  geom_line(colour = ifr_bleu_fonce, linewidth = 1) +
+  geom_point(colour = ifr_bleu_fonce, size = 2) +
+  labs(x = NULL, y = "CPUE (kg / 100 hameçons)", title = "b) Indice d'abondance")
+grid::grid.newpage()
+grid::pushViewport(grid::viewport(layout = grid::grid.layout(1, 2)))
+print(p1, vp = grid::viewport(layout.pos.row = 1, layout.pos.col = 1))
+print(p2, vp = grid::viewport(layout.pos.row = 1, layout.pos.col = 2))
+```
+
+::: {.small}
+Thon germon (*Thunnus alalunga*), Atlantique Sud, 1967-1989 : captures et CPUE des palangriers [@polacheck1993]
+:::
+
+::: {.notes}
+Voici un jeu de données classique, utilisé par Polacheck et ses collègues pour
+comparer les méthodes d'ajustement [@polacheck1993], puis repris dans de
+nombreux manuels. Il concerne le thon germon (*Thunnus alalunga*) de
+l'Atlantique Sud, de 1967 à 1989. Les captures sont exprimées en milliers de
+tonnes. L'indice d'abondance est la capture par unité d'effort des palangriers,
+en kilogrammes pour cent hameçons.
+
+On observe des captures d'environ 15 à 37 milliers de tonnes par an, et une
+CPUE qui diminue de plus de moitié sur la période. Si la CPUE est proportionnelle
+à la biomasse, le stock a donc fortement diminué. La question est : de combien,
+et les captures actuelles sont-elles durables ?
+:::
+
+## Résultat de l'ajustement
+
+::: {.columns}
+::: {.column width="58%"}
+```{r}
+#| label: g-germon-ajust
+#| fig-width: 7
+#| fig-height: 5
+res <- data.frame(annee = germon$annee, obs = germon$pue, pred = fit$pue_pred)
+ggplot(res, aes(annee)) +
+  geom_point(aes(y = obs), colour = ifr_bleu_fonce, size = 2.5) +
+  geom_line(aes(y = pred), colour = ifr_rouge, linewidth = 1.2) +
+  labs(x = NULL, y = "CPUE (kg / 100 hameçons)",
+       subtitle = "points : observé ; ligne : prédit par le modèle")
+```
+:::
+::: {.column width="42%"}
+```{r}
+#| label: tab-germon
+tab <- data.frame(
+  Paramètre = c("r", "K (kt)", "q", "MSY (kt)", "B[MSY] (kt)", "F[MSY]"),
+  Estimation = as.character(c(round(fit$r, 2), round(fit$K), signif(fit$q, 2),
+                 round(msy, 1), round(bmsy), round(fmsy, 2)))
+)
+tab$Paramètre <- c("r", "K (kt)", "q", "MSY (kt)", "B~MSY~ (kt)", "F~MSY~")
+knitr::kable(tab)
+```
+
+::: {.small}
+Hypothèse : stock vierge en 1967 ($B_1 = K$). Ajustement par `optim()`.
+:::
+:::
+:::
+
+::: {.notes}
+Le modèle ajusté (ligne rouge) suit correctement la tendance de la CPUE
+observée (points bleus), malgré une variabilité d'une année à l'autre que le
+modèle ne cherche pas à reproduire.
+
+Les paramètres estimés sont un taux de croissance $r$ d'environ
+`r round(fit$r, 2)` et une capacité de charge $K$ d'environ `r round(fit$K)`
+milliers de tonnes. On en déduit un rendement maximal durable d'environ
+`r round(msy, 1)` milliers de tonnes par an, obtenu pour une biomasse de
+`r round(bmsy)` milliers de tonnes et une mortalité par pêche de
+`r round(fmsy, 2)`.
+
+Pour simplifier, on a supposé que le stock était vierge au début de la série,
+en 1967. Cette hypothèse, et le choix de la fonction à minimiser, influencent
+les résultats : d'autres études trouvent des valeurs un peu différentes sur
+ces mêmes données [@polacheck1993; @meyer1999]. Ces chiffres sont donc une
+illustration de la méthode, pas une évaluation officielle du stock.
+:::
+
+## Diagnostic : l'état du stock
+
+::: {.columns}
+::: {.column width="58%"}
+```{r}
+#| label: g-kobe
+#| fig-width: 7
+#| fig-height: 5.2
+kobe <- data.frame(annee = germon$annee,
+                   BB = fit$B / bmsy,
+                   FF = (germon$capture / fit$B) / fmsy)
+ggplot(kobe, aes(BB, FF)) +
+  annotate("rect", xmin = 0, xmax = 1, ymin = 1, ymax = Inf, fill = ifr_rouge, alpha = 0.25) +
+  annotate("rect", xmin = 1, xmax = Inf, ymin = 0, ymax = 1, fill = "forestgreen", alpha = 0.25) +
+  annotate("rect", xmin = 0, xmax = 1, ymin = 0, ymax = 1, fill = ifr_jaune, alpha = 0.25) +
+  annotate("rect", xmin = 1, xmax = Inf, ymin = 1, ymax = Inf, fill = ifr_jaune, alpha = 0.25) +
+  geom_path(colour = "grey30") +
+  geom_point(colour = ifr_bleu_fonce, size = 2.5) +
+  geom_vline(xintercept = 1) + geom_hline(yintercept = 1) +
+  geom_label(data = kobe[c(1, nrow(kobe)), ], aes(label = annee),
+             nudge_y = 0.18, size = 5) +
+  labs(x = expression(B / B[MSY]), y = expression(F / F[MSY]))
+```
+:::
+::: {.column width="42%"}
+**Diagramme de Kobe**
+
+- **vert** : stock en bon état, pêche durable
+- **rouge** : stock **surpêché** ($B < B_{MSY}$) et **surexploité** ($F > F_{MSY}$)
+
+En 1989 : $B/B_{MSY} \approx$ `r round(tail(kobe$BB, 1), 2)` et $F/F_{MSY} \approx$ `r round(tail(kobe$FF, 1), 2)`
+:::
+:::
+
+::: {.notes}
+Pour communiquer l'état d'un stock aux gestionnaires, on utilise souvent le
+diagramme de Kobe, du nom de la ville japonaise où il a été adopté par les
+commissions thonières. L'axe horizontal compare la biomasse à $B_{MSY}$,
+l'axe vertical compare la mortalité par pêche à $F_{MSY}$.
+
+Le quadrant vert (en bas à droite) correspond à un stock abondant et à une
+pêche durable. Le quadrant rouge (en haut à gauche) correspond à un stock à la
+fois surpêché (biomasse trop faible) et surexploité (mortalité par pêche trop
+forte). Les quadrants jaunes sont des situations intermédiaires.
+
+Selon notre ajustement, le stock de germon part du stock vierge (à droite) et
+se déplace vers la gauche au fil des années. En fin de série, il se trouve
+dans le quadrant rouge. Les captures de la fin des années 1980, entre 25 et
+37 milliers de tonnes, dépassaient le MSY estimé : le modèle recommanderait
+de les réduire pour permettre au stock de se reconstituer.
+:::
+
+## D'autres exemples d'utilisation
+
+::: {.columns}
+::: {.column width="50%"}
+- **Thon albacore, Pacifique Est** : premier usage du modèle pour recommander des limites de capture [@scheafer1957]
+- **Thonidés et requins** : les commissions thonières (CICTA, CTOI...) utilisent encore des modèles de production [@winker2018]
+- **Stocks pauvres en données** : le CIEM utilise SPiCT pour estimer F/F~MSY~ et B/B~MSY~ quand on n'a pas de données par âge [@pedersen2017]
+- **Pêcheries tropicales** en développement [@gascuel2008]
+:::
+::: {.column width="50%"}
+::: {.callout-box}
+**Dans le TD 6**
+
+Ajustement du modèle à **l'espèce de Manche Est choisie au TD 3** :
+
+- captures : débarquements français (SIH)
+- indice : campagne scientifique **CGFS** (Ifremer)
+- outils : les fonctions écrites aux TD 4 et 5
+:::
+:::
+:::
+
+::: {.notes}
+Le modèle de production a d'abord servi à gérer la pêcherie de thon albacore
+du Pacifique Est dans les années 1950 et 1960 [@scheafer1957].
+
+Il reste très utilisé pour les grands pélagiques (thons, espadons, requins),
+dont on connaît mal l'âge des individus mais dont on suit les captures et les
+CPUE des palangriers depuis longtemps. Les commissions régionales des pêches
+thonières, comme la CICTA (ICCAT) pour l'Atlantique ou la CTOI pour l'océan
+Indien, utilisent des versions modernes de ces modèles, comme JABBA
+[@winker2018].
+
+En Europe, le CIEM réserve les modèles structurés en âge aux stocks bien
+suivis. Pour les nombreux stocks pauvres en données, il utilise des modèles de
+production comme SPiCT, qui fournissent des indicateurs de l'état du stock par
+rapport au MSY [@pedersen2017].
+
+Dans le TD 6, vous ajusterez ce modèle à l'espèce de Manche Est que vous
+avez choisie au TD 3, à partir des débarquements français et de l'indice
+d'abondance de la campagne scientifique CGFS de l'Ifremer. Un indice de
+campagne est indépendant de la pêche, contrairement à une CPUE commerciale,
+dont la capturabilité peut varier avec les stratégies des pêcheurs ou la
+réglementation. Vous verrez aussi que ces données réelles posent des
+difficultés : ajustement instable, paramètres irréalistes, sensibilité aux
+hypothèses.
+:::
+
+## Limites et généralisations {background-color="#0032C8" .chapter-slide}
+
+<span class="chapter-number">05.</span>
+
+De Fox à SPiCT
+
+## Les limites du modèle de Schaefer
+
+::: {.columns}
+::: {.column width="55%"}
+- **Pas de structure en âge** : ignore les variations du recrutement et la sélectivité des engins
+- **Paramètres constants** : $r$ et $K$ ne varient pas avec l'environnement
+- **Capturabilité constante** : $I = qB$ est souvent faux pour une CPUE commerciale
+- **Forme imposée** : $B_{MSY}$ toujours égal à $K/2$
+- **Besoin de contraste** : si la série ne montre qu'un déclin (*one-way trip*), $r$ et $K$ sont mal estimés [@hilborn1992]
+:::
+::: {.column width="45%"}
+::: {.needs-box}
+**Ressources stables ou instables**
+
+Le modèle convient aux **ressources stables** (recrutement peu variable : gadidés, grands pélagiques).
+
+Il convient mal aux **ressources instables** (petits pélagiques à recrutement très variable) [@gascuel2008].
+:::
+:::
+:::
+
+::: {.notes}
+Le modèle de Schaefer repose sur des hypothèses fortes.
+
+Il ne distingue pas les âges. Il ne peut donc pas représenter l'effet d'une
+très bonne ou d'une très mauvaise année de recrutement, ni l'effet d'un
+changement de maillage qui protège les juvéniles. Ses paramètres sont
+constants : un changement de régime environnemental qui modifie la
+productivité du stock n'est pas pris en compte. La relation entre l'indice et
+la biomasse suppose une capturabilité constante, souvent fausse pour une CPUE
+commerciale.
+
+La forme de la courbe de production est imposée : le MSY est toujours atteint
+à la moitié de la capacité de charge, ce qui n'a pas de justification
+biologique générale. Enfin, pour estimer séparément $r$ et $K$, il faut que
+les données soient contrastées : une série qui ne montre qu'un déclin
+continu, sans phase de reconstitution, est peu informative [@hilborn1992].
+
+Didier Gascuel distingue les ressources stables, à recrutement peu variable,
+pour lesquelles le modèle global fonctionne bien, des ressources instables,
+comme les petits pélagiques, dont l'abondance dépend surtout de
+l'environnement [@gascuel2008].
+:::
+
+## Changer la forme de la courbe : Fox et Pella-Tomlinson
+
+::: {.columns}
+::: {.column width="55%"}
+```{r}
+#| label: g-formes
+#| fig-width: 7
+#| fig-height: 5
+K0 <- 1000
+B <- seq(1, K0, length.out = 300)
+pt <- function(B, r, K, m) r / (m - 1) * B * (1 - (B / K)^(m - 1))
+formes <- rbind(
+  data.frame(B = B, P = 0.4 * B * (1 - B / K0), modele = "Schaefer (m = 2)"),
+  data.frame(B = B, P = 0.4 * B * (1 - log(B) / log(K0)) * log(K0) / exp(1) / 2.5,
+             modele = "Fox (m → 1)"),
+  data.frame(B = B, P = pt(B, 0.4, K0, 4) * 0.55, modele = "Pella-Tomlinson (m = 4)")
+)
+ggplot(formes, aes(B / K0, P, colour = modele)) +
+  geom_line(linewidth = 1.2) +
+  scale_colour_manual(values = c(ifr_rouge, ifr_jaune, ifr_bleu_fonce)) +
+  labs(x = "B / K", y = "Production (unité arbitraire)", colour = NULL) +
+  theme(legend.position = "bottom", legend.direction = "vertical")
+```
+:::
+::: {.column width="45%"}
+**Modèle généralisé** [@pella1969] :
+
+$$
+\frac{dB}{dt} = \frac{r}{m-1}\,B\left[1 - \left(\frac{B}{K}\right)^{m-1}\right] - C
+$$
+
+- $m = 2$ : Schaefer, $B_{MSY} = K/2$
+- $m \to 1$ : Fox, $B_{MSY} = K/e \approx 0{,}37\,K$ [@fox1970]
+- $m > 2$ : $B_{MSY} > K/2$
+:::
+:::
+
+::: {.small}
+Courbes mises à l'échelle pour comparer leurs formes.
+:::
+
+::: {.notes}
+Pour lever la contrainte $B_{MSY} = K/2$, plusieurs variantes ont été
+proposées. Le modèle de Fox (1970), proposé aussi par Garrod (1969), utilise
+une fonction logarithmique : la production est maximale pour une biomasse
+plus faible, environ 37 % de $K$ [@fox1970]. Le modèle de Pella et Tomlinson
+(1969), dit « modèle généralisé », ajoute un paramètre de forme $m$ qui
+déplace le maximum de la courbe [@pella1969]. Schaefer correspond à $m = 2$
+et Fox au cas limite où $m$ tend vers 1.
+
+La figure compare les formes de ces courbes, mises à la même échelle. En
+pratique, le paramètre de forme est difficile à estimer avec des données
+réelles. On le fixe souvent à partir de connaissances sur des espèces
+proches : une méta-analyse de nombreux stocks suggère que le maximum de
+production se situe en moyenne vers 40 % de $K$, en dessous de la valeur de
+Schaefer [@thorson2012].
+:::
+
+## Les modèles de production aujourd'hui
+
+::: {.columns}
+::: {.column width="55%"}
+- **Modèles espace d'états** : séparent l'**erreur de processus** (variabilité réelle du stock) et l'**erreur d'observation** (bruit des indices)
+- **Approche bayésienne** : intègre des connaissances *a priori* sur $r$ ou $K$ [@meyer1999]
+- **SPiCT** : temps continu, plusieurs indices, incertitude sur l'état du stock ; utilisé par le CIEM [@pedersen2017]
+- **JABBA** : bayésien, utilisé pour les thons et les requins [@winker2018]
+- **CMSY** : à partir des seules captures et d'hypothèses sur la résilience [@froese2017]
+:::
+::: {.column width="45%"}
+::: {.callout-box}
+**Et au-delà**
+
+Les stocks bien suivis sont évalués par des modèles **structurés en âge ou en taille** (analyse des cohortes, modèles statistiques intégrés).
+
+Les **modèles écosystémiques** intègrent les interactions entre espèces et l'environnement.
+:::
+:::
+:::
+
+::: {.notes}
+Le modèle de Schaefer a connu de nombreux développements.
+
+Les modèles « espace d'états » distinguent deux sources d'incertitude :
+l'erreur de processus, qui représente la variabilité réelle de la dynamique du
+stock (une bonne ou une mauvaise année), et l'erreur d'observation, liée au
+bruit des indices d'abondance. Les approches bayésiennes permettent en outre
+d'intégrer des connaissances préalables, par exemple sur le taux de croissance
+d'espèces proches [@meyer1999].
+
+SPiCT (*Stochastic surplus Production model in Continuous Time*) est un modèle
+espace d'états en temps continu, qui peut utiliser plusieurs indices
+d'abondance et fournit une incertitude sur l'état du stock. Il est utilisé par
+le CIEM pour de nombreux stocks pauvres en données [@pedersen2017]. JABBA est
+un équivalent bayésien très utilisé par les commissions thonières
+[@winker2018]. Quand on ne dispose que des captures, la méthode CMSY estime
+des points de référence à partir d'hypothèses sur la résilience de l'espèce,
+avec une forte incertitude [@froese2017].
+
+Pour les stocks bien échantillonnés, on préfère les modèles structurés en âge
+ou en taille, qui représentent le recrutement, la croissance et la sélectivité
+des engins. Les modèles écosystémiques, enfin, prennent en compte les
+interactions entre espèces et l'effet de l'environnement. Le modèle de
+Schaefer reste la porte d'entrée de toute cette famille : ses notions de
+production excédentaire, de MSY et de diagnostic B/B~MSY~ et F/F~MSY~ se
+retrouvent dans tous ces modèles.
+:::
+
+## À retenir
+
+::: {.incremental}
+- Le modèle de Schaefer décrit la **biomasse totale** d'un stock avec deux paramètres biologiques : $r$ et $K$
+- La **densité-dépendance** rend une pêche durable possible : un stock pêché est plus productif
+- À l'équilibre : $MSY = rK/4$, $B_{MSY} = K/2$, $F_{MSY} = r/2$
+- Au-delà de $F_{MSY}$, **plus d'effort donne moins de captures** à long terme
+- On l'ajuste à une série de **captures** et d'**indice d'abondance** en minimisant l'écart entre indice observé et prédit
+- Ses limites ont conduit à des modèles plus généraux (Pella-Tomlinson, SPiCT, JABBA), qui gardent les mêmes concepts
+:::
+
+::: {.notes}
+Retenez que le modèle de Schaefer est une représentation très simplifiée de la
+dynamique d'un stock, mais qu'il contient les idées fondamentales de
+l'halieutique : la production excédentaire, le rendement maximal durable et
+le diagnostic de l'état d'un stock par rapport aux points de référence.
+
+Ces notions sont utilisées dans les avis scientifiques du CIEM et dans les
+objectifs de la Politique commune de la pêche, qui vise l'exploitation des
+stocks au niveau du rendement maximal durable.
+:::
+
+## Vers les TD
+
+| TD | Contenu | Notions du cours |
+|---|---|---|
+| **TD 4** `04_modele_theorie_application` | programmer le modèle ; effet de $r$ et de $K$ ; chaos ; captures constantes et MSY | équations, densité-dépendance, scénarios, points de référence |
+| **TD 5** `04_modele_ajustement_application` | ajuster une régression puis le modèle de Schaefer avec `optim()` : données simulées, puis germon | ajustement, indice d'abondance, points de référence, diagnostic |
+| **TD 6** `04_modele_ajustementbis_application` | ajuster le modèle à une espèce de Manche Est : débarquements et indice CGFS ; hypothèse sur $r$ ; diagnostic | application réelle, indice de campagne, limites |
+
+: {tbl-colwidths="[30,42,28]"}
+
+::: {.callout-box}
+Package R nécessaire : **ggplot2** seulement. Les fonctions du modèle sont écrites au TD 4 et réutilisées aux TD 5 et 6.
+:::
+
+::: {.notes}
+Les TD suivent la progression de ce cours.
+
+Le TD 4 (`applications/04_modele_theorie_application.qmd`) vous fait
+programmer le modèle vous-même : d'abord une année de dynamique à la main,
+puis une fonction, puis des trajectoires sur plusieurs dizaines d'années. Vous
+y explorez l'effet du taux de croissance $r$ (vitesse de reconstitution, puis
+oscillations et chaos quand $r$ dépasse 2) et de la capacité de charge $K$
+(simple facteur d'échelle). Vous y testez enfin des captures constantes, pour
+retrouver que le MSY est la plus grande capture soutenable et découvrir
+l'équilibre instable. Il ne demande que le package ggplot2.
+
+Le TD 5 (`applications/04_modele_ajustement_application.qmd`) porte sur
+l'ajustement. Il en pose d'abord le principe sur une régression linéaire :
+solution exacte par les moindres carrés, puis recherche numérique avec
+`optim()`. Il applique ensuite la même démarche au modèle de Schaefer, sur des
+données simulées dont on connaît les vrais paramètres, ce qui permet de voir
+ce que l'ajustement retrouve, et ce qu'il ne retrouve pas quand les données
+manquent de contraste. Il se termine par les données réelles du germon de
+l'Atlantique Sud, avec le calcul du MSY et le diagnostic de l'état du stock.
+Il contient aussi la démonstration de $B_{MSY} = K/2$ et du $MSY = rK/4$.
+
+Le TD 6 (`applications/04_modele_ajustementbis_application.qmd`) applique
+la même démarche à l'espèce de Manche Est que vous avez choisie au TD 3. Les
+captures sont les débarquements français, et l'indice d'abondance provient de
+la campagne scientifique CGFS de l'Ifremer, calculé par échantillonnage
+aléatoire stratifié. Vous y verrez qu'avec des données réelles, l'ajustement
+peut donner des paramètres irréalistes, et qu'une hypothèse extérieure sur $r$
+peut le stabiliser, au prix d'une dépendance des résultats à cette hypothèse.
+Vous terminerez par un diagnostic de l'état du stock et une discussion des
+limites des données.
+:::
+
+## Références {.smaller .scrollable}
+
+::: {#refs}
+:::

@@ -1,0 +1,19 @@
+<script>
+// Impression avec les notes (?print-pdf&showNotes=true) : réduit la police de
+// chaque note jusqu'à ce qu'elle tienne dans sa zone, pour qu'aucune ne soit coupée.
+(function () {
+  function ajusterNotes() {
+    document.querySelectorAll('.speaker-notes-pdf[data-layout="inline"]').forEach(function (note) {
+      var taille = 18;
+      note.style.fontSize = taille + 'px';
+      while (note.scrollHeight > note.clientHeight + 1 && taille > 6) {
+        taille -= 0.5;
+        note.style.fontSize = taille + 'px';
+      }
+    });
+  }
+  if (window.Reveal) {
+    Reveal.on('pdf-ready', ajusterNotes);
+  }
+})();
+</script>

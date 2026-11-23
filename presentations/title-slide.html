@@ -1,0 +1,14 @@
+<section id="$idprefix$title-slide"$for(title-slide-attributes/pairs)$ $it.key$="$it.value$"$endfor$ class="ifr-cover">
+  <img class="ifr-cover-marianne" src="images/logo-republique-francaise.png" alt="République française">
+  <img class="ifr-cover-ifremer" src="images/logo-ifremer.png" alt="Ifremer">
+  <div class="ifr-cover-heading">
+    <h1 class="title">$title$</h1>
+$if(subtitle)$
+    <p class="subtitle">$subtitle$</p>
+$endif$
+  </div>
+  <p class="author">$for(by-author)$$it.name.literal$$sep$, $endfor$</p>
+$if(cover-date)$
+  <p class="date">$cover-date$</p>
+$endif$
+</section>

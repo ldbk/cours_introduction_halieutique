@@ -1,0 +1,278 @@
+% ---------------------------------------------------------------------------
+% Bibliographie de 04_modele.qmd (modèle de production de Schaefer,
+% modèles de dynamique de la biomasse)
+% Métadonnées vérifiées en ligne (Crossref, doi.org, OpenAlex, PDF originaux
+% IATTC, éditeurs), nov. 2026.
+%
+% Déjà dans Zotero (clé et entrée recopiées depuis MyLibrary.bib, sans file/abstract) :
+%   scheafer1957 (clé avec faute de frappe conservée ; nom d'auteur corrigé ici
+%                 « Scheafer » -> « Schaefer », à corriger aussi dans Zotero),
+%   froese2017, pedersen2017 (présente EN DOUBLE dans Zotero),
+%   gascuel2008, Maunder2002 (clé avec majuscule conservée)
+%
+% À importer dans Zotero : toutes les autres entrées.
+% Collisions de clés dans Zotero :
+%   - ices2018 existe déjà (ICES WKASMSF, stades de maturité)
+%     -> Technical Guidelines catégories 3 et 4 est ici ices2018a
+% ---------------------------------------------------------------------------
+
+% ---- Fondateurs ------------------------------------------------------------
+
+@Article{verhulst1838,
+  title   = {Notice sur la loi que la population suit dans son accroissement},
+  author  = {Verhulst, Pierre-François},
+  journal = {Correspondance mathématique et physique},
+  year    = {1838},
+  volume  = {10},
+  pages   = {113--121}
+}
+
+@Article{graham1935,
+  title   = {Modern Theory of Exploiting a Fishery, and Application to {North Sea} Trawling},
+  author  = {Graham, Michael},
+  journal = {Journal du Conseil International pour l'Exploration de la Mer},
+  year    = {1935},
+  volume  = {10},
+  number  = {3},
+  pages   = {264--274},
+  doi     = {10.1093/icesjms/10.3.264}
+}
+
+@Article{schaefer1954,
+  title   = {Some Aspects of the Dynamics of Populations Important to the Management of the Commercial Marine Fisheries},
+  author  = {Schaefer, Milner B.},
+  journal = {Bulletin of the Inter-American Tropical Tuna Commission},
+  year    = {1954},
+  volume  = {1},
+  number  = {2},
+  pages   = {27--56}
+}
+
+@article{scheafer1957,
+  title = {A Study of the Dynamics of the Fishery for Yellowfin Tuna in the {{Eastern Tropical Pacific Ocean}}.},
+  author = {Schaefer, M.B.},
+  date = {1957},
+  journaltitle = {Bulletin, Inter-American Tropical Tuna Commission},
+  shortjournal = {Bull. Inter-Am. Trop. Tuna Comm.},
+  volume = {2},
+  number = {6},
+  pages = {247--285}
+}
+
+% ---- Variantes de la fonction de production --------------------------------
+
+@Article{pella1969,
+  title   = {A Generalized Stock Production Model},
+  author  = {Pella, Jerome J. and Tomlinson, Patrick K.},
+  journal = {Bulletin of the Inter-American Tropical Tuna Commission},
+  year    = {1969},
+  volume  = {13},
+  number  = {3},
+  pages   = {419--496}
+}
+
+@Article{fox1970,
+  title   = {An Exponential Surplus-Yield Model for Optimizing Exploited Fish Populations},
+  author  = {Fox, William W., Jr.},
+  journal = {Transactions of the American Fisheries Society},
+  year    = {1970},
+  volume  = {99},
+  number  = {1},
+  pages   = {80--88},
+  doi     = {10.1577/1548-8659(1970)99<80:AESMFO>2.0.CO;2}
+}
+
+@Article{thorson2012,
+  title   = {Spawning Biomass Reference Points for Exploited Marine Fishes, Incorporating Taxonomic and Body Size Information},
+  author  = {Thorson, James T. and Cope, Jason M. and Branch, Trevor A. and Jensen, Olaf P.},
+  journal = {Canadian Journal of Fisheries and Aquatic Sciences},
+  year    = {2012},
+  volume  = {69},
+  number  = {9},
+  pages   = {1556--1568},
+  doi     = {10.1139/f2012-077}
+}
+
+% ---- Ajustement : équilibre, erreur d'observation, erreur de processus -----
+
+@Article{ludwig1985,
+  title   = {Are Age-Structured Models Appropriate for Catch-Effort Data?},
+  author  = {Ludwig, Donald and Walters, Carl J.},
+  journal = {Canadian Journal of Fisheries and Aquatic Sciences},
+  year    = {1985},
+  volume  = {42},
+  number  = {6},
+  pages   = {1066--1072},
+  doi     = {10.1139/f85-132}
+}
+
+@Book{hilborn1992,
+  title     = {Quantitative Fisheries Stock Assessment: Choice, Dynamics and Uncertainty},
+  author    = {Hilborn, Ray and Walters, Carl J.},
+  publisher = {Chapman and Hall},
+  address   = {New York},
+  year      = {1992},
+  doi       = {10.1007/978-1-4615-3598-0}
+}
+
+@Article{polacheck1993,
+  title   = {Fitting Surplus Production Models: Comparing Methods and Measuring Uncertainty},
+  author  = {Polacheck, Tom and Hilborn, Ray and Punt, André E.},
+  journal = {Canadian Journal of Fisheries and Aquatic Sciences},
+  year    = {1993},
+  volume  = {50},
+  number  = {12},
+  pages   = {2597--2607},
+  doi     = {10.1139/f93-284}
+}
+
+@Article{prager1994,
+  title   = {A Suite of Extensions to a Nonequilibrium Surplus-Production Model},
+  author  = {Prager, Michael H.},
+  journal = {Fishery Bulletin},
+  year    = {1994},
+  volume  = {92},
+  number  = {2},
+  pages   = {374--389}
+}
+
+@Article{punt2003,
+  title   = {Extending Production Models to Include Process Error in the Population Dynamics},
+  author  = {Punt, André E.},
+  journal = {Canadian Journal of Fisheries and Aquatic Sciences},
+  year    = {2003},
+  volume  = {60},
+  number  = {10},
+  pages   = {1217--1228},
+  doi     = {10.1139/f03-105}
+}
+
+% ---- Modèles bayésiens et espace d'états -----------------------------------
+
+@Article{meyer1999,
+  title   = {{BUGS} in {Bayesian} Stock Assessments},
+  author  = {Meyer, Renate and Millar, Russell B.},
+  journal = {Canadian Journal of Fisheries and Aquatic Sciences},
+  year    = {1999},
+  volume  = {56},
+  number  = {6},
+  pages   = {1078--1087},
+  doi     = {10.1139/f99-043}
+}
+
+@Article{millar2000,
+  title   = {Non-Linear State Space Modelling of Fisheries Biomass Dynamics by Using {Metropolis-Hastings} within-{Gibbs} Sampling},
+  author  = {Millar, Russell B. and Meyer, Renate},
+  journal = {Journal of the Royal Statistical Society: Series C (Applied Statistics)},
+  year    = {2000},
+  volume  = {49},
+  number  = {3},
+  pages   = {327--342},
+  doi     = {10.1111/1467-9876.00195}
+}
+
+@article{pedersen2017,
+  title = {A Stochastic Surplus Production Model in Continuous Time},
+  author = {Pedersen, Martin W and Berg, Casper W},
+  date = {2017},
+  journaltitle = {Fish and Fisheries},
+  shortjournal = {Fish Fish.},
+  volume = {18},
+  number = {2},
+  pages = {226--243},
+  issn = {1467-2979},
+  doi = {10.1111/faf.12174},
+  url = {https://onlinelibrary.wiley.com/doi/abs/10.1111/faf.12174},
+  urldate = {2026-07-22},
+  langid = {english},
+  keywords = {Data-limited methods,fisheries management,maximum sustainable yield,Pella–Tomlinson model,seasonal population dynamics,stock assessment},
+}
+
+@article{froese2017,
+  title = {Estimating Fisheries Reference Points from Catch and Resilience},
+  author = {Froese, Rainer and Demirel, Nazli and Coro, Gianpaolo and Kleisner, Kristin M. and Winker, Henning},
+  date = {2017},
+  journaltitle = {Fish and Fisheries},
+  shortjournal = {Fish Fish.},
+  volume = {18},
+  number = {3},
+  pages = {506--526},
+  doi = {10.1111/faf.12190}
+}
+
+@Article{winker2018,
+  title   = {{JABBA}: Just Another {Bayesian} Biomass Assessment},
+  author  = {Winker, Henning and Carvalho, Felipe and Kapur, Maia},
+  journal = {Fisheries Research},
+  year    = {2018},
+  volume  = {204},
+  pages   = {275--288},
+  doi     = {10.1016/j.fishres.2018.03.010}
+}
+
+% ---- Points de référence, MSY, usage en avis -------------------------------
+
+@Article{hilborn2002,
+  title   = {The Dark Side of Reference Points},
+  author  = {Hilborn, Ray},
+  journal = {Bulletin of Marine Science},
+  year    = {2002},
+  volume  = {70},
+  number  = {2},
+  pages   = {403--408}
+}
+
+@article{Maunder2002,
+  title = {The Relationship between Fishing Methods, Fisheries Management and the Estimation of Maximum Sustainable Yield},
+  author = {Maunder, Mark N},
+  date = {2002},
+  journaltitle = {Fish and Fisheries},
+  shortjournal = {Fish Fish.},
+  volume = {3},
+  number = {4},
+  eprint = {http://www.blackwell-synergy.com/doi/pdf/10.1046/j.1467-2979.2002.00089.x},
+  pages = {251--260},
+  doi = {10.1046/j.1467-2979.2002.00089.x},
+  url = {http://www.blackwell-synergy.com/doi/abs/10.1046/j.1467-2979.2002.00089.x}
+}
+
+@TechReport{ices2018a,
+  title       = {{ICES} Reference Points for Stocks in Categories 3 and 4},
+  author      = {{ICES}},
+  institution = {International Council for the Exploration of the Sea},
+  address     = {Copenhagen},
+  type        = {ICES Technical Guidelines},
+  year        = {2018},
+  doi         = {10.17895/ices.pub.4128}
+}
+
+% ---- Manuels -----------------------------------------------------------------
+
+@Book{haddon2020,
+  title     = {Using {R} for Modelling and Quantitative Methods in Fisheries},
+  author    = {Haddon, Malcolm},
+  publisher = {Chapman and Hall/CRC},
+  address   = {Boca Raton},
+  series    = {The R Series},
+  year      = {2020},
+  doi       = {10.1201/9781003032601}
+}
+
+@misc{gascuel2008,
+  title = {Dynamique Des Populations et Gestion Des Stocks Halieutiques - Support de Cours},
+  author = {Gascuel, D.},
+  date = {2008},
+  organization = {Agrocampus Ouest / Campus numérique ENVAM},
+}
+
+% Ajout du rédacteur (à importer)
+@Article{may1976,
+  title   = {Simple Mathematical Models with Very Complicated Dynamics},
+  author  = {May, Robert M.},
+  journal = {Nature},
+  year    = {1976},
+  volume  = {261},
+  number  = {5560},
+  pages   = {459--467},
+  doi     = {10.1038/261459a0}
+}

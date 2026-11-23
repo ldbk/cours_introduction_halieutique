@@ -1,0 +1,1004 @@
+---
+title: "Introduction à l'halieutique"
+subtitle: "Les outils : R, Quarto et la recherche reproductible"
+author: "Laurent Dubroca"
+cover-date: "23/11/2026"
+lang: fr
+bibliography: /Users/moi/Zotero/exportdb/MyLibrary.bib
+title-slide-attributes:
+  data-state: ifr-cover
+format:
+  revealjs:
+    theme: [default, custom.scss]
+    logo: images/logo-total.png
+    template-partials:
+      - title-slide.html
+    footer: "Introduction à l'halieutique — M2 Sciences de la Mer — CREC Luc-sur-Mer, 23-24 novembre 2026"
+    slide-number: c/t
+    include-after-body: print-notes.html
+    transition: fade
+    background-transition: fade
+    center: false
+    width: 1280
+    height: 720
+    embed-resources: true
+    controls: true
+    hash: true
+    preview-links: auto
+    fig-align: center
+---
+
+## Plan
+
+1. **R** : un langage pour analyser des données
+2. **Quarto** : écrire le texte et le code dans un même document
+3. **La recherche reproductible** : pourquoi documenter ce que l'on fait
+4. **Dans un bureau d'études** : gagner du temps et la confiance des clients
+5. **Partager** : les dépôts de données et de code ouverts
+
+::: {.callout-box}
+**Objectif** : comprendre *pourquoi* on travaille avec des scripts et des documents Quarto, avant d'apprendre *comment* dans le TD.
+:::
+
+::: {.notes}
+Ce cours présente les outils utilisés pendant les deux journées : le langage R
+et le système de publication Quarto. Au-delà de la technique, il défend une
+manière de travailler : la recherche reproductible. Une analyse est
+reproductible quand une autre personne (ou vous-même, six mois plus tard) peut
+refaire exactement les mêmes calculs, à partir des mêmes données, et obtenir
+les mêmes résultats.
+
+Ces pratiques ne concernent pas que la recherche académique. Elles sont tout
+aussi utiles dans un bureau d'études, une administration ou une ONG, où l'on
+produit des rapports pour des clients ou des décideurs. Le TD qui suit
+(`applications/02_outils_application.qmd`) met tout cela en pratique.
+:::
+
+## R {background-color="#0032C8" .chapter-slide}
+
+<span class="chapter-number">01.</span>
+
+Un langage pour analyser des données
+
+## Qu'est-ce que R ?
+
+::: {.columns}
+::: {.column width="55%"}
+- Un **langage de programmation** et un **environnement** pour les statistiques et les graphiques [@ihaka1996; @rcoreteam2024]
+- **Libre et gratuit** (licence GPL), sous Windows, macOS et Linux
+- Conçu au début des années 1990 par R. Ihaka et R. Gentleman (Auckland), version 1.0 en 2000, aujourd'hui maintenu par la *R Core Team*
+- Extensible par des **packages** : plus de 20 000 sur le dépôt officiel [CRAN](https://cran.r-project.org/)
+:::
+::: {.column width="45%"}
+::: {.callout-box}
+**On ne clique pas, on écrit**
+
+```{.r}
+captures <- c(120, 95, 143)
+mean(captures)
+#> [1] 119.3333
+```
+
+Chaque étape de l'analyse est écrite, donc **lisible, vérifiable et rejouable**.
+:::
+:::
+:::
+
+::: {.notes}
+R est à la fois un langage de programmation et un logiciel spécialisé dans
+l'analyse statistique et la production de graphiques. Il a été créé au début
+des années 1990 par Ross Ihaka et Robert Gentleman, à l'université d'Auckland,
+en s'inspirant du langage S. Il est libre, sous licence GPL (GNU General Public
+License) : chacun peut l'utiliser, lire son code source et le modifier
+gratuitement, à condition de redistribuer les versions modifiées sous la même
+licence.
+
+Sa force vient de sa communauté. Des milliers de chercheurs publient des
+« packages », des extensions qui ajoutent des fonctions spécialisées : modèles
+statistiques, cartographie, accès à des bases de données... Le dépôt officiel,
+le CRAN, en compte plus de 20 000.
+
+La différence fondamentale avec un tableur comme Excel : dans R, on écrit des
+instructions au lieu de cliquer. Cela demande un petit effort au début, mais
+chaque étape est enregistrée dans un script. On peut la relire, la corriger,
+la partager et la relancer sur de nouvelles données.
+:::
+
+## Pourquoi R en halieutique ?
+
+::: {.columns}
+::: {.column width="50%"}
+**Le langage commun des halieutes**
+
+- Utilisé par les groupes d'experts du **CIEM** pour les évaluations de stocks
+- Données et méthodes publiées dans le cadre **TAF** [@icestaf]
+- Statistiques, modèles, cartes, rapports : un seul outil
+:::
+::: {.column width="50%"}
+**Quelques packages du domaine**
+
+| Package | Usage |
+|---|---|
+| `icesDatras`, `icesTAF` | accès aux données et au cadre du CIEM |
+| `stockassessment` | modèle d'évaluation SAM |
+| `r4ss` | sorties du modèle Stock Synthesis |
+| `FLCore` (FLR) | simulation de gestion |
+| `vmstools` | données de positionnement des navires |
+
+: {tbl-colwidths="[40,60]"}
+
+::: {.small}
+Seuls `icesDatras` et `icesTAF` s'installent depuis le CRAN ; les autres depuis GitHub ou [r-universe](https://r-universe.dev).
+:::
+:::
+:::
+
+::: {.notes}
+En halieutique, R est devenu un standard. Les groupes de travail du Conseil
+international pour l'exploration de la mer (CIEM, ou ICES en anglais), qui
+évaluent l'état des stocks de l'Atlantique Nord-Est, utilisent R pour la
+plupart de leurs analyses. Le CIEM a même mis en place un cadre, le
+Transparent Assessment Framework (TAF), dans lequel les données, le code R et
+les résultats de chaque évaluation sont publiés ensemble [@icestaf].
+
+De nombreux packages spécialisés existent. Ils permettent d'accéder aux
+données des campagnes scientifiques (`icesDatras`), d'ajuster des modèles
+d'évaluation de stocks (`stockassessment`, qui implémente le modèle SAM), de
+lire les sorties d'autres modèles (`r4ss` pour Stock Synthesis), de simuler des
+stratégies de gestion (la suite FLR) ou de traiter les données de position des
+navires (`vmstools`). Savoir lire et écrire du R est donc une compétence
+directement utile pour travailler en halieutique.
+
+Quelques définitions. SAM (State-space Assessment Model) et Stock Synthesis
+sont deux modèles d'évaluation de stocks très utilisés : à partir des captures
+et d'indices d'abondance, ils estiment l'effectif d'une population et la
+mortalité par pêche. FLR (Fisheries Library in R) est une suite de packages
+pour simuler des stratégies de gestion. Le VMS (Vessel Monitoring System) est
+le système de surveillance des navires par satellite, qui enregistre leur
+position à intervalles réguliers.
+
+Ces packages ne sont pas tous sur le CRAN. Certains s'installent depuis
+GitHub ou r-universe, avec une commande légèrement différente de
+`install.packages()`, toujours indiquée dans leur documentation.
+:::
+
+## L'environnement de travail : RStudio
+
+::: {.columns}
+::: {.column width="50%"}
+R s'utilise via un **environnement de développement** (IDE) : [RStudio](https://posit.co/download/rstudio-desktop/) (ou [Positron](https://positron.posit.co/)).
+
+| Panneau | Rôle |
+|---|---|
+| **Éditeur** | scripts `.R` et documents `.qmd` |
+| **Console** | exécution des commandes |
+| **Environnement** | objets en mémoire |
+| **Fichiers / Graphiques / Aide** | navigation, figures, documentation |
+
+: {tbl-colwidths="[40,60]"}
+:::
+::: {.column width="50%"}
+::: {.needs-box}
+**Bonnes habitudes dès le départ**
+
+- travailler dans un **projet RStudio** (`.Rproj`)
+- utiliser des **chemins relatifs** (`data/captures.csv`) plutôt qu'absolus (`C:/Users/moi/...`)
+- ne **pas** sauvegarder l'espace de travail (`.RData`) : c'est le script qui fait foi
+:::
+:::
+:::
+
+::: {.notes}
+R lui-même est un moteur de calcul : on l'utilise presque toujours à travers
+un environnement de développement. RStudio est le plus répandu. Positron, plus
+récent et développé par la même société (Posit), en est une alternative.
+
+L'écran de RStudio est divisé en quatre panneaux. L'éditeur, où l'on écrit les
+scripts et les documents. La console, où les commandes s'exécutent.
+L'environnement, qui liste les objets créés. Enfin, un panneau qui regroupe
+les fichiers, les graphiques et l'aide.
+
+Trois habitudes vous éviteront beaucoup d'ennuis. D'abord, regrouper chaque
+travail dans un projet RStudio, qui fixe le répertoire de travail. Ensuite,
+utiliser des chemins relatifs à ce projet, pour que le code fonctionne sur un
+autre ordinateur. Enfin, désactiver la sauvegarde automatique de l'espace de
+travail (Tools > Global Options > General) : vos résultats doivent pouvoir être
+recréés à partir du script seul, pas d'un état de mémoire hérité d'une session
+précédente.
+:::
+
+## Quarto {background-color="#0032C8" .chapter-slide}
+
+<span class="chapter-number">02.</span>
+
+Écrire le texte et le code dans un même document
+
+## L'idée : la programmation lettrée
+
+::: {.columns}
+::: {.column width="55%"}
+> « Au lieu d'imaginer que notre tâche principale est de dire à un ordinateur quoi faire, concentrons-nous plutôt sur l'explication à des êtres humains de ce que nous voulons que l'ordinateur fasse. »
+>
+> D. Knuth, *Literate programming* [@knuth1984]
+
+- **Texte** (le raisonnement) et **code** (les calculs) dans un **même fichier**
+- Les résultats (chiffres, tableaux, figures) sont **calculés au moment de la compilation**
+:::
+::: {.column width="45%"}
+::: {.callout-box}
+**Fini le copier-coller**
+
+Méthode classique : analyse dans un logiciel → copier les chiffres → coller dans Word → recommencer à chaque modification.
+
+Avec Quarto : on modifie les données ou le code, on **recompile**, et tout le document est à jour.
+:::
+:::
+:::
+
+::: {.notes}
+L'idée derrière Quarto remonte à 1984 : l'informaticien Donald Knuth propose la
+« programmation lettrée » (literate programming). Un programme doit être écrit
+d'abord pour être lu par des humains : le code est accompagné d'un texte qui
+explique le raisonnement [@knuth1984].
+
+Appliquée à l'analyse de données, cette idée donne des documents qui mélangent
+le texte d'un rapport et le code qui produit ses résultats. Dans un rapport
+classique, on fait les calculs dans un logiciel, puis on copie les chiffres et
+les graphiques dans un traitement de texte. À chaque correction des données,
+il faut tout recommencer, avec un risque d'oubli ou d'erreur de recopie. Avec
+un document Quarto, les chiffres et les figures sont recalculés à chaque
+compilation : le texte et les résultats restent toujours cohérents.
+:::
+
+## Anatomie d'un document `.qmd`
+
+::: {.columns}
+::: {.column width="55%"}
+````markdown
+---
+title: "Débarquements de sole"
+author: "Prénom Nom"
+format: html
+---
+
+## Introduction
+
+Les débarquements sont présentés
+par **année**.
+
+```{{r}}
+#| label: fig-sole
+#| fig-cap: "Débarquements (t)"
+plot(annee, tonnage, type = "b")
+```
+
+Le total est de `r knitr::inline_expr("sum(tonnage)")` t.
+````
+:::
+::: {.column width="45%"}
+1. **En-tête YAML** (entre `---`) : titre, auteur, format de sortie
+2. **Texte en Markdown** : titres `##`, **gras**, *italique*, listes, liens
+3. **Blocs de code R** : exécutés à la compilation ; options `#|` (légende, affichage du code...)
+4. **Code en ligne** : un chiffre calculé directement dans une phrase
+:::
+:::
+
+::: {.notes}
+Un document Quarto (extension `.qmd`) est un simple fichier texte qui comporte
+quatre types d'éléments.
+
+L'en-tête YAML, encadré par trois tirets, contient les métadonnées : titre,
+auteur, date et format de sortie souhaité. YAML (« YAML Ain't Markup
+Language ») est simplement un format texte de la forme `clé: valeur`.
+
+Le corps du document est écrit en Markdown, une syntaxe très légère pour mettre
+en forme du texte : `##` pour un titre, des astérisques pour le gras ou
+l'italique, des tirets pour une liste.
+
+Les blocs de code, délimités par trois accents graves et `{r}`, contiennent du
+code R. Ils sont exécutés lors de la compilation, et leur résultat (un
+tableau, un graphique) est inséré dans le document. Les lignes qui commencent
+par `#|` règlent le comportement du bloc : afficher ou non le code, donner une
+légende à la figure, etc.
+
+Enfin, on peut insérer un résultat directement dans une phrase avec la syntaxe
+`` `r knitr::inline_expr("expression")` `` (Quarto accepte aussi la variante où `{r}` précède l’xpression). Le total
+affiché dans le texte n'est jamais recopié à la main : il est recalculé à
+chaque compilation.
+:::
+
+## Un fichier source, plusieurs sorties
+
+```{mermaid}
+%%| fig-width: 11
+flowchart LR
+  A["document.qmd<br/>texte + code R"] --> B["knitr<br/>exécute le code R"]
+  B --> C["document.md<br/>texte + résultats"]
+  C --> D["Pandoc<br/>conversion"]
+  D --> E["HTML"]
+  D --> F["PDF"]
+  D --> G["Word"]
+  D --> H["Présentation"]
+  D --> I["Site web, livre"]
+```
+
+::: {.callout-box}
+Cette présentation est elle-même un document Quarto, comme les TD du cours.
+:::
+
+::: {.notes}
+Quarto est un système de publication scientifique libre, successeur de
+R Markdown [@xie2018; @allaire2022quarto]. Lors de la compilation (le bouton
+« Render » de RStudio, ou la commande `quarto render`), deux étapes se
+succèdent. D'abord, le moteur knitr exécute les blocs de code R et remplace
+chacun par son résultat. Ensuite, le convertisseur Pandoc transforme le
+document obtenu dans le format demandé : page HTML, PDF, document Word,
+diaporama, voire site web ou livre complet.
+
+Le même fichier source peut donc produire un rapport Word pour un client, un
+PDF pour une publication et une page web pour le grand public. Quarto
+fonctionne aussi avec Python et Julia. Les diapositives que vous lisez et les
+TD du cours sont des documents Quarto : vous pouvez ouvrir leur source sur le
+dépôt GitHub du cours, <https://github.com/ldbk/cours_introduction_halieutique>.
+:::
+
+## La recherche reproductible {background-color="#0032C8" .chapter-slide}
+
+<span class="chapter-number">03.</span>
+
+Pourquoi documenter ce que l'on fait
+
+## Une crise de la reproductibilité
+
+::: {.columns}
+::: {.column width="50%"}
+Enquête auprès de **1 576 chercheurs** [@baker2016] :
+
+- **plus de 70 %** ont déjà échoué à reproduire les résultats d'un collègue
+- **plus de 50 %** ont échoué à reproduire **leurs propres** résultats
+- 52 % parlent d'une « crise significative »
+:::
+::: {.column width="50%"}
+::: {.needs-box}
+**En écologie**
+
+Seuls **27 %** des articles publiés dans 14 revues d'écologie (2015-2019) et reposant sur des analyses partageaient leur code [@culina2020].
+:::
+:::
+:::
+
+::: {.notes}
+En 2016, la revue Nature a interrogé plus de 1 500 chercheurs de toutes
+disciplines. Plus de 70 % avaient déjà échoué à reproduire une expérience d'un
+autre chercheur, et plus de la moitié n'avaient pas réussi à reproduire leurs
+propres résultats [@baker2016]. Les causes citées sont variées : pression à
+publier, analyses statistiques fragiles, mais aussi méthodes et code
+insuffisamment documentés ou non disponibles.
+
+L'écologie n'échappe pas au problème. Culina et ses collègues ont examiné les
+articles de 14 revues d'écologie publiés entre 2015 et 2019 : seuls environ
+27 % des articles qui reposaient sur des analyses informatiques rendaient leur
+code disponible [@culina2020]. Sans le code, il est très difficile de vérifier
+une analyse, de détecter une erreur ou de réutiliser une méthode.
+:::
+
+## Reproduire, répliquer : de quoi parle-t-on ?
+
+::: {.columns}
+::: {.column width="50%"}
+- **Reproductible** : mêmes données + même code → mêmes résultats
+- **Réplicable** : nouvelles données + même méthode → mêmes conclusions ?
+
+En écologie, les observations de terrain sont souvent **impossibles à refaire** (une campagne, une année, un événement climatique). La **reproductibilité computationnelle** reste toujours atteignable [@powers2019].
+:::
+::: {.column width="50%"}
+**Le spectre de la reproductibilité** [@peng2011]
+
+| Niveau | Ce qui est partagé |
+|---|---|
+| Non reproductible | publication seule |
+| ↓ | + code |
+| ↓ | + code et données |
+| ↓ | + code, données et environnement logiciel complet |
+| **Étalon-or** | réplication complète |
+
+: {tbl-colwidths="[40,60]"}
+:::
+:::
+
+::: {.notes}
+Il faut distinguer deux notions. Une analyse est reproductible si, avec les
+mêmes données et le même code, on obtient les mêmes résultats. Elle est
+réplicable si une nouvelle étude, avec de nouvelles données et la même
+méthode, aboutit aux mêmes conclusions.
+
+En écologie marine, la réplication est souvent impossible : on ne peut pas
+refaire la campagne scientifique de 1995, ni retrouver l'état de l'océan d'une
+année donnée. Raison de plus pour garantir au moins la reproductibilité
+computationnelle : que l'analyse des données existantes puisse être refaite et
+vérifiée [@powers2019].
+
+Roger Peng représente la reproductibilité comme un spectre [@peng2011]. Au plus
+bas, l'article seul, qui décrit la méthode en mots. Puis l'article accompagné
+du code, puis du code et des données, puis de l'environnement logiciel complet
+(versions exactes de R et des packages, parfois une machine virtuelle)
+permettant de tout relancer. L'objectif réaliste pour vous est le niveau
+« code et données ».
+:::
+
+## L'Ocean Health Index en une figure
+
+::: {.columns}
+::: {.column width="62%"}
+```{r}
+#| label: ohi-fleur
+#| echo: false
+#| warning: false
+#| fig-width: 8
+#| fig-height: 6.6
+#| out-width: 100%
+library(ggplot2)
+# Scores 2025 des 10 objectifs de l'OHI (sur 100) : moyenne mondiale et France
+# Source : OHI-Science, dépôt ohi-global, yearly_results/global2025
+ohi <- data.frame(
+    objectif = c(
+        "Alimentation",
+        "Pêche artisanale",
+        "Produits naturels",
+        "Stockage du carbone",
+        "Protection côtière",
+        "Emplois et économie",
+        "Tourisme et loisirs",
+        "Identité culturelle",
+        "Eaux propres",
+        "Biodiversité"
+    ),
+    Monde = c(48.96, 75.13, 82.75, 80.91, 78.12, 82.78, 56.48, 63.65, 78.89, 77.51),
+    France = c(59.54, 78.36, 79.30, 81.89, 98.52, 93.43, 94.65, 86.48, 60.98, 75.98)
+)
+ohi_long <- rbind(
+    data.frame(zone = "Monde : 72 / 100", objectif = ohi$objectif, score = ohi$Monde),
+    data.frame(zone = "France : 81 / 100", objectif = ohi$objectif, score = ohi$France)
+)
+ohi_long$objectif <- factor(ohi_long$objectif, levels = ohi$objectif)
+ohi_long$zone <- factor(
+    ohi_long$zone,
+    levels = c("Monde : 72 / 100", "France : 81 / 100")
+)
+ggplot(ohi_long, aes(x = objectif, y = score, fill = objectif)) +
+    geom_col(aes(y = 100), fill = "grey92", width = 1, colour = "white") +
+    geom_col(width = 1, colour = "white") +
+    coord_polar() +
+    facet_wrap(~zone) +
+    scale_y_continuous(limits = c(0, 100), breaks = NULL) +
+    scale_fill_manual(
+        values = c(
+            "#0032C8",
+            "#0064FF",
+            "#4F8BFF",
+            "#2E7D6B",
+            "#55A884",
+            "#FFC000",
+            "#F2A541",
+            "#D7263D",
+            "#7FB3D5",
+            "#1B9E77"
+        )
+    ) +
+    labs(x = NULL, y = NULL, fill = NULL) +
+    guides(fill = guide_legend(ncol = 3)) +
+    theme_minimal(base_size = 14) +
+    theme(
+        axis.text.x = element_blank(),
+        panel.grid = element_blank(),
+        strip.text = element_text(size = 17, face = "bold"),
+        legend.position = "bottom",
+        plot.margin = margin(0, 0, 0, 0)
+    )
+```
+:::
+::: {.column width="38%"}
+- Un indice de **0 à 100** qui mesure la capacité de l'océan à fournir durablement **10 bénéfices** aux sociétés humaines [@halpern2012]
+- Chaque **pétale** = un objectif ; sa longueur = son score
+- **Alimentation** (pêche et aquaculture) : l'un des scores les plus faibles au niveau mondial
+
+::: {.small}
+Scores 2025 [@ohiscience2025]
+:::
+:::
+:::
+
+::: {.notes}
+L'Ocean Health Index (OHI) a été proposé en 2012 par Benjamin Halpern et ses
+collègues [@halpern2012]. Il ne mesure pas seulement l'état « naturel » de
+l'océan, mais sa capacité à fournir durablement des bénéfices aux sociétés
+humaines. Il combine dix objectifs : l'alimentation (pêche et aquaculture),
+la pêche artisanale, les produits naturels (coquillages, algues, huiles...),
+le stockage du carbone par les habitats côtiers, la protection côtière, les
+emplois et l'économie liés à la mer, le tourisme et les loisirs, l'identité
+culturelle (espèces emblématiques et sites remarquables), la propreté des
+eaux et la biodiversité.
+
+Chaque objectif reçoit un score de 0 à 100, qui compare la situation actuelle
+à une valeur de référence durable et tient compte des pressions, de la
+résilience et de la tendance récente. L'indice global est la moyenne des dix
+objectifs.
+
+On le représente par un diagramme en fleur : chaque pétale correspond à un
+objectif, et sa longueur à son score. En 2025, la moyenne mondiale est de 72
+sur 100, et la France obtient 81 [@ohiscience2025]. Au niveau mondial, le
+pétale « alimentation » est l'un des plus courts (49 sur 100) : beaucoup de
+stocks sont surexploités et l'aquaculture reste peu développée dans de
+nombreux pays. Pour la France, le point le plus faible est la propreté des
+eaux (61 sur 100).
+
+Calculer cet indice pour plus de 200 pays et territoires, chaque année,
+demande de rassembler et de traiter des dizaines de jeux de données. C'est ce
+qui a conduit l'équipe à adopter les outils de science ouverte présentés sur
+la diapositive suivante. Les scores utilisés ici proviennent directement de
+leur dépôt GitHub public : l'indice lui-même est un exemple de données
+reproductibles et réutilisables.
+:::
+
+## Exemple marin : l'Ocean Health Index
+
+::: {.columns}
+::: {.column width="55%"}
+- L'**Ocean Health Index** évalue chaque année la santé des eaux de 220 pays et territoires (leurs ZEE)
+- Avant : tableurs, copier-coller, procédures connues de quelques personnes → difficile de refaire l'évaluation chaque année
+- Après : **R, Git/GitHub et documents R Markdown** → l'évaluation est **refaite plus vite, avec moins d'erreurs**, et elle est mieux partagée
+:::
+::: {.column width="45%"}
+::: {.callout-box}
+« *Our path to better science in less time using open data science tools* »
+
+@lowndes2017
+:::
+:::
+:::
+
+::: {.notes}
+L'Ocean Health Index (OHI) est un indicateur synthétique de la santé des
+écosystèmes marins. Il est calculé chaque année pour toutes les zones
+économiques exclusives du monde. Il agrège des dizaines de jeux de données
+(pêche, biodiversité, pollution, tourisme...) qui sont mis à jour
+régulièrement.
+
+L'équipe qui le produit a raconté sa transition [@lowndes2017]. Au début, les
+calculs reposaient sur des tableurs et des scripts dispersés, compris par
+quelques personnes seulement. Refaire l'évaluation chaque année était long et
+risqué. En adoptant R, le gestionnaire de versions Git, la plateforme GitHub
+et des documents R Markdown (l'ancêtre de Quarto), ils ont rendu tout le
+processus reproductible et transparent. Git est un logiciel de gestion de
+versions : il enregistre l'historique de toutes les modifications d'un projet,
+qu'on peut consulter ou annuler. GitHub est un site qui héberge ces projets et
+facilite le travail à plusieurs. Résultat, résumé dans le titre de
+l'article : une meilleure science, en moins de temps. C'est exactement
+l'argument que nous retrouverons dans le cadre d'un bureau d'études.
+:::
+
+## En halieutique : le cadre TAF du CIEM
+
+::: {.columns}
+::: {.column width="50%"}
+Chaque évaluation de stock du CIEM peut être publiée comme un **dépôt TAF** [@icestaf] :
+
+```
+boot/       données initiales et logiciels
+data.R      préparation des données
+model.R     ajustement du modèle
+output.R    extraction des résultats
+report.R    tableaux et figures du rapport
+```
+:::
+::: {.column width="50%"}
+::: {.needs-box}
+**Pourquoi c'est essentiel**
+
+Avis scientifique → **TAC** (totaux admissibles de captures) → quotas → revenus des pêcheurs.
+
+Une décision aux conséquences économiques fortes doit pouvoir être **vérifiée par tous** : scientifiques, gestionnaires, professionnels, ONG.
+:::
+:::
+:::
+
+::: {.notes}
+L'halieutique est un domaine où la reproductibilité a des conséquences très
+concrètes. Les évaluations de stocks du CIEM servent de base aux avis
+scientifiques. À partir de ces avis, l'Union européenne fixe les totaux
+admissibles de captures (TAC), puis les quotas attribués à chaque pays et à
+chaque organisation de producteurs. Une erreur dans une évaluation peut donc
+coûter cher, aux pêcheurs comme à la ressource.
+
+Pour rendre ces évaluations transparentes, le CIEM a créé le Transparent
+Assessment Framework (TAF) [@icestaf]. Chaque évaluation est organisée de la
+même façon, en une suite de scripts R : préparation des données, ajustement du
+modèle, extraction des résultats, production du rapport. N'importe qui peut
+télécharger le dépôt et relancer toute la chaîne. C'est une application
+directe des principes vus dans ce cours.
+:::
+
+## Les bonnes pratiques
+
+::: {.columns}
+::: {.column width="50%"}
+D'après @sandve2013 et @wilson2017 :
+
+::: {.incremental}
+- **Ne jamais modifier les données brutes** : on les lit, on les transforme par script
+- **Tout faire par script** : pas d'étape manuelle non tracée
+- **Organiser le projet** : `data/`, `R/`, `output/`, un fichier `README`
+- **Documenter** : commentaires, texte explicatif (Quarto)
+- **Versionner** le code (Git)
+- **Noter les versions** des logiciels (`sessionInfo()`)
+- **Partager** code et données avec la publication
+:::
+:::
+::: {.column width="50%"}
+::: {.callout-box}
+**Votre premier collaborateur, c'est vous dans 6 mois.**
+
+Il ne se souviendra ni de l'ordre des étapes, ni du fichier corrigé à la main, ni du filtre appliqué « juste pour voir ».
+:::
+:::
+:::
+
+::: {.notes}
+Deux articles très lus donnent des règles simples [@sandve2013; @wilson2017].
+Leur titre est parlant : « Dix règles simples pour une recherche
+computationnelle reproductible » et « Des pratiques suffisamment bonnes en
+informatique scientifique ». Pas besoin d'être informaticien pour les
+appliquer.
+
+La plus importante : les données brutes ne se modifient jamais à la main. Si
+une valeur est fausse, on la corrige dans le script, de façon visible et
+justifiée. Toute la chaîne, de la lecture des données au rapport final, doit
+être écrite dans des scripts. Une organisation claire des dossiers, un code
+commenté et un historique des versions permettent à quelqu'un d'autre de
+comprendre le travail.
+
+Le premier bénéficiaire de ces pratiques, c'est vous. Quand un relecteur
+demandera une analyse complémentaire six mois après la soumission d'un article,
+ou quand votre encadrant vous demandera de refaire une figure, vous serez
+content de pouvoir tout relancer en une commande.
+:::
+
+## Des données FAIR
+
+::: {.columns}
+::: {.column width="50%"}
+Principes **FAIR** [@wilkinson2016] :
+
+| | | |
+|---|---|---|
+| **F** | *Findable* | trouvable : identifiant pérenne (DOI), métadonnées |
+| **A** | *Accessible* | accessible : protocole ouvert, conditions d'accès claires |
+| **I** | *Interoperable* | interopérable : formats et vocabulaires standards |
+| **R** | *Reusable* | réutilisable : licence, provenance, documentation |
+
+: {tbl-colwidths="[8,27,65]"}
+:::
+::: {.column width="50%"}
+::: {.callout-box}
+FAIR ≠ ouvert : des données confidentielles (données de pêche individuelles, par exemple) peuvent être FAIR avec un accès restreint.
+:::
+
+La science ouverte en écologie : @hampton2015
+:::
+:::
+
+::: {.notes}
+Les principes FAIR, publiés en 2016, sont aujourd'hui la référence pour la
+gestion des données de recherche [@wilkinson2016]. Ils sont exigés par la
+plupart des financeurs (Agence nationale de la recherche, programmes
+européens). Des données FAIR sont faciles à trouver (grâce à un identifiant
+pérenne comme un DOI et à des métadonnées), accessibles, interopérables
+(formats standards comme le CSV, vocabulaires partagés comme les codes
+d'espèces) et réutilisables (licence claire, origine documentée).
+
+FAIR ne veut pas dire « librement accessible à tous ». Les données de pêche
+individuelles, par exemple, sont confidentielles car elles touchent au secret
+commercial. Elles peuvent néanmoins être bien décrites et accessibles sous
+conditions. Pour un panorama de la science ouverte en écologie, voir
+@hampton2015.
+:::
+
+## Dans un bureau d'études {background-color="#0032C8" .chapter-slide}
+
+<span class="chapter-number">04.</span>
+
+Gagner du temps et la confiance des clients
+
+## Le contexte
+
+::: {.columns}
+::: {.column width="55%"}
+Un bureau d'études en environnement marin produit :
+
+- des **suivis réglementaires** annuels (qualité de l'eau, benthos, ressources halieutiques)
+- des **études d'impact** (parcs éoliens en mer, extractions de granulats, ports)
+- des **rapports récurrents** pour des clients publics ou privés
+
+**Toujours les mêmes analyses, sur des données qui changent.**
+:::
+::: {.column width="45%"}
+::: {.needs-box}
+**Le scénario classique**
+
+Le rapport 2025 a été fait dans un tableur et un traitement de texte, par une personne qui a quitté l'entreprise.
+
+Le client demande le rapport 2026...
+:::
+:::
+:::
+
+::: {.notes}
+Beaucoup d'entre vous travailleront dans un bureau d'études, une collectivité,
+une agence de l'État ou une association plutôt que dans la recherche
+académique. Les arguments de la recherche reproductible y sont tout aussi
+valables, mais pour des raisons économiques.
+
+Un bureau d'études en environnement marin réalise souvent des suivis
+pluriannuels : suivi de la qualité de l'eau, du benthos ou des ressources
+autour d'un parc éolien pendant sa construction puis son exploitation, par
+exemple. Chaque année, les analyses sont les mêmes : seules les données
+changent.
+
+Le scénario classique est bien connu. Le rapport de l'année précédente a été
+produit avec des tableurs, des graphiques copiés-collés et des chiffres
+recopiés à la main, par une personne qui n'est plus là. Il faut alors
+reconstituer la démarche, au risque de ne pas retrouver les mêmes résultats.
+:::
+
+## Gagner du temps : le rapport paramétré
+
+::: {.columns}
+::: {.column width="55%"}
+````markdown
+---
+title: "Suivi halieutique"
+format: docx
+params:
+  annee: 2026
+  site: "Parc éolien de Courseulles"
+---
+
+```{{r}}
+donnees <- read.csv("data/suivi.csv")
+donnees <- subset(donnees, annee == params$annee)
+```
+
+Bilan de l’nnée `r knitr::inline_expr("params$annee")` sur le site
+`r knitr::inline_expr("params$site")` : ...
+````
+
+```{.bash}
+quarto render rapport.qmd -P annee:2027
+```
+:::
+::: {.column width="45%"}
+::: {.callout-box}
+**Une mise à jour = une commande**
+
+- nouvelles données → nouveau rapport complet
+- un rapport par site, par espèce, par client avec le **même modèle**
+- le temps gagné va à l'**interprétation**, pas à la mise en forme
+:::
+:::
+:::
+
+::: {.notes}
+Quarto permet d'écrire des rapports paramétrés. On définit dans l'en-tête des
+paramètres (ici l'année et le site) qui sont utilisés dans le code. Pour
+produire le rapport de l'année suivante, il suffit de déposer les nouvelles
+données et de relancer la compilation avec un autre paramètre. Tableaux,
+figures et chiffres cités dans le texte sont recalculés automatiquement, et la
+sortie peut être un document Word si c'est le format attendu par le client.
+
+Le même modèle peut aussi produire un rapport par site ou par espèce en
+quelques secondes. Le premier rapport demande plus de travail qu'avec un
+tableur. Les suivants ne demandent presque plus rien, et le temps gagné peut
+être consacré à ce qui a de la valeur : l'interprétation des résultats.
+
+Ce n'est pas qu'une idée de chercheurs. Au Royaume-Uni, la statistique
+publique a fait de ces « chaînes d'analyse reproductibles » (Reproducible
+Analytical Pipelines, RAP) sa stratégie officielle pour produire les
+statistiques plus vite et plus sûrement [@rap2022].
+:::
+
+## Gagner la confiance des clients
+
+::: {.columns}
+::: {.column width="50%"}
+**Les erreurs manuelles coûtent cher**
+
+- Un article d'économie très influent sur la dette publique contenait une **erreur de sélection de cellules** dans un tableur [@herndon2014]
+- Environ **20 %** des articles de génomique joignant des listes de gènes sous Excel comportaient des **conversions automatiques erronées** (gènes transformés en dates) [@ziemann2016]
+:::
+::: {.column width="50%"}
+**La traçabilité comme argument commercial**
+
+- **Auditabilité** : chaque chiffre du rapport remonte au code et aux données
+- **Contre-expertise** facilitée : un tiers peut tout relancer
+- **Continuité** : le savoir-faire reste dans l'entreprise, pas dans la tête d'une personne
+- **Qualité** : cohérent avec les démarches qualité (type ISO 9001)
+:::
+:::
+
+::: {.notes}
+La confiance est le deuxième argument. Deux exemples célèbres montrent ce que
+coûtent les manipulations manuelles. En 2010, un article d'économie très cité,
+utilisé pour justifier des politiques d'austérité, reposait en partie sur une
+erreur de sélection de cellules dans un tableur. Elle a été découverte par un
+étudiant qui cherchait à reproduire les calculs [@herndon2014]. En génomique,
+environ un cinquième des articles qui joignaient des listes de gènes sous
+Excel contenaient des erreurs : le tableur avait automatiquement converti
+certains noms de gènes en dates [@ziemann2016].
+
+Pour un bureau d'études, une erreur dans un rapport remis à un client ou à
+l'administration peut avoir des conséquences juridiques et commerciales. À
+l'inverse, pouvoir montrer que chaque chiffre est tracé, depuis les données
+brutes jusqu'au rapport, est un argument fort. Les études d'impact sont
+souvent contestées : en cas de contre-expertise, une analyse reproductible se
+défend bien mieux. Enfin, le savoir-faire est capitalisé dans des scripts
+documentés plutôt que dans la mémoire d'un salarié.
+:::
+
+## Bilan : deux façons de travailler
+
+| | Tableur + copier-coller | Script R + Quarto |
+|---|---|---|
+| **Premier rapport** | rapide | plus long (écrire le code) |
+| **Rapports suivants** | aussi long que le premier | quelques minutes |
+| **Traçabilité** | faible : étapes manuelles | totale : tout est écrit |
+| **Erreurs de recopie** | fréquentes | fortement réduites |
+| **Transmission** | dépend d'une personne | le code documente la démarche |
+| **Contre-expertise** | difficile | relancer le code |
+
+: {tbl-colwidths="[25,37,38]"}
+
+::: {.callout-box}
+L'investissement initial est vite rentabilisé dès qu'une analyse doit être **refaite**, **mise à jour** ou **vérifiée**.
+:::
+
+::: {.notes}
+Ce tableau résume la comparaison. Le travail en scripts demande un
+investissement au départ : il faut apprendre un langage et écrire le code du
+premier rapport. Cet investissement est rapidement rentabilisé, dès qu'une
+analyse doit être refaite, mise à jour ou vérifiée, c'est-à-dire presque
+toujours. L'expérience de l'Ocean Health Index le montre dans le monde de la
+recherche [@lowndes2017], celle de la statistique publique britannique dans le
+monde professionnel [@rap2022].
+:::
+
+## Partager {background-color="#0032C8" .chapter-slide}
+
+<span class="chapter-number">05.</span>
+
+Les dépôts de données et de code ouverts
+
+## Où déposer données, code et rapports ?
+
+| Dépôt | Contenu | Particularités |
+|---|---|---|
+| [Zenodo](https://zenodo.org) | données, code, rapports, présentations | généraliste (CERN), **DOI** gratuit, lien automatique avec GitHub |
+| [SEANOE](https://www.seanoe.org) | données marines | éditeur de données de l'Ifremer, DOI, citable |
+| [Archimer](https://archimer.ifremer.fr) | publications, rapports, thèses | archive ouverte de l'Ifremer |
+| [Recherche Data Gouv](https://recherche.data.gouv.fr) | données de recherche | entrepôt national français |
+| [data.gouv.fr](https://www.data.gouv.fr) | données publiques | plateforme ouverte de l'État |
+| [HAL](https://hal.science) | publications | archive ouverte nationale |
+| [Software Heritage](https://www.softwareheritage.org) | code source | archive universelle et pérenne du logiciel |
+| [GitHub](https://github.com) / [GitLab](https://gitlab.com) | code versionné | travail collaboratif (pas un archivage pérenne) |
+| [PANGAEA](https://pangaea.de) | données des sciences de la Terre et de l'environnement | DOI, liés aux revues |
+| [Dryad](https://datadryad.org) | données associées aux articles | généraliste, DOI, liés aux revues |
+
+: {tbl-colwidths="[22,28,50]"}
+
+::: {.notes}
+Il existe de nombreux dépôts ouverts. Zenodo, hébergé par le CERN, accepte tout
+type de fichier, attribue gratuitement un DOI (un identifiant pérenne et
+citable) et peut archiver automatiquement chaque version d'un dépôt GitHub.
+C'est un excellent choix par défaut, y compris pour une entreprise qui veut
+publier une méthode ou un jeu de données.
+
+Pour les sciences marines, l'Ifremer propose SEANOE, un service de publication
+de données marines avec DOI, et Archimer, son archive ouverte de publications et
+de rapports. Vous y trouverez de nombreux rapports d'évaluation et de
+campagnes. Au niveau national, Recherche Data Gouv accueille les données de
+recherche et data.gouv.fr les données publiques. HAL est l'archive ouverte des
+publications.
+
+Pour le code, GitHub et GitLab sont des outils de travail collaboratif, mais
+pas des archives pérennes. Software Heritage archive le code source de façon
+permanente, et Zenodo peut archiver une version précise d'un dépôt GitHub.
+:::
+
+## Où trouver des données marines et halieutiques ?
+
+::: {.columns}
+::: {.column width="50%"}
+- [ICES Data Portal](https://data.ices.dk) : campagnes scientifiques (DATRAS), évaluations de stocks
+- [EMODnet](https://emodnet.ec.europa.eu) : réseau européen de données marines (biologie, bathymétrie, activités humaines...)
+- [OBIS](https://obis.org) / [GBIF](https://www.gbif.org) : occurrences d'espèces
+- [data.ifremer.fr](https://data.ifremer.fr) et [SEXTANT](https://sextant.ifremer.fr) : données et cartes de l'Ifremer
+- [FAO FishStat](https://www.fao.org/fishery/en/fishstat) : statistiques mondiales de pêche
+:::
+::: {.column width="50%"}
+::: {.callout-box}
+**Bien partager, c'est :**
+
+- un format ouvert (CSV plutôt que XLSX)
+- des métadonnées (qui, quoi, où, quand, comment)
+- une **licence** explicite (CC-BY pour les données, MIT ou GPL pour le code)
+- un **DOI** pour être cité
+:::
+:::
+:::
+
+::: {.notes}
+Le partage fonctionne dans les deux sens : vous allez aussi réutiliser des
+données publiées par d'autres. En halieutique et en écologie marine, plusieurs
+portails sont incontournables. Le portail de données du CIEM donne accès aux
+données des campagnes scientifiques de chalutage (base DATRAS). EMODnet
+rassemble des données européennes très variées. OBIS et GBIF recensent des
+observations d'espèces. L'Ifremer diffuse ses données via data.ifremer.fr et
+son catalogue cartographique SEXTANT. La FAO publie les statistiques mondiales
+de captures et d'aquaculture.
+
+Bien partager ses propres données suppose un format ouvert et durable, des
+métadonnées qui permettent de les comprendre sans vous, une licence qui dit
+ce que les autres ont le droit d'en faire, et un identifiant pérenne pour
+qu'elles soient citées. Les licences les plus courantes sont CC-BY (Creative
+Commons Attribution : réutilisation libre à condition de citer l'auteur) pour
+les données et les textes, et MIT ou GPL pour le code. La licence MIT est très
+permissive. La GPL impose que les versions modifiées restent libres. Un jeu de données publié avec un DOI est un résultat
+scientifique à part entière, qui peut figurer dans un CV.
+:::
+
+## À retenir
+
+::: {.columns}
+::: {.column width="55%"}
+::: {.incremental}
+- **R** : un langage libre, standard en halieutique
+- **Quarto** : texte + code + résultats dans un seul document, plusieurs formats de sortie
+- **Reproductible** = mêmes données + même code → mêmes résultats
+- En recherche : **crédibilité**, vérification, réutilisation
+- En entreprise : **gain de temps** et **confiance** des clients
+- **Partager** sur des dépôts ouverts, avec DOI et licence
+:::
+:::
+::: {.column width="45%"}
+::: {.needs-box}
+**Place au TD**
+
+`applications/02_outils_application.qmd`
+
+1. Travailler avec un document Quarto
+2. Les bases de R
+3. Explorer des objets
+4. Installer et charger des packages
+5. Graphiques en R de base et avec ggplot2 [@wickham2016]
+:::
+:::
+:::
+
+::: {.notes}
+Pour résumer : R est l'outil de travail standard pour l'analyse de données en
+halieutique. Quarto permet d'écrire des documents qui contiennent à la fois le
+raisonnement, le code et les résultats. Ensemble, ils rendent les analyses
+reproductibles. Pour un chercheur, c'est une condition de crédibilité. Pour un
+bureau d'études, c'est un gain de temps et un argument de qualité auprès des
+clients. Le partage des données et du code sur des dépôts ouverts complète la
+démarche.
+
+Le TD qui suit vous fait pratiquer tout cela : prise en main d'un document
+Quarto, bases du langage R, exploration des données, installation de packages
+et réalisation de graphiques, d'abord avec les fonctions de base de R puis
+avec le package ggplot2.
+:::
+
+## Références {.smaller .scrollable}
+
+::: {#refs}
+:::
