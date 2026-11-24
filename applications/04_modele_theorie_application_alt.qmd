@@ -197,7 +197,7 @@ d'utiliser ces colonnes pour la couleur, par exemple
    change pas ?
 
 ```{r}
-i #| label: avous-production
+#| label: avous-production
 # votre code ici
 ```
 
