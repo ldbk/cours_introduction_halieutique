@@ -1,0 +1,651 @@
+---
+title: "TD 5 — Ajuster le modèle de Schaefer à des données (correction)"
+subtitle: "Introduction à l'halieutique — M2 Sciences de la Mer"
+author: "Laurent Dubroca"
+date: today
+lang: fr
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    number-sections: true
+    embed-resources: true
+    code-tools: true
+    theme: cosmo
+execute:
+  echo: true
+  warning: false
+  message: false
+---
+
+# Objectifs et consignes {.unnumbered}
+
+Au TD précédent, vous avez **simulé** le modèle de Schaefer à partir de
+valeurs connues de $r$ et $K$. En pratique, c'est l'inverse : on observe des
+captures et un indice d'abondance, et l'on cherche les valeurs de $r$ et $K$
+qui expliquent le mieux ces observations. C'est l'**ajustement** du modèle.
+
+1. comprendre le principe de l'ajustement sur un cas simple, la régression
+   linéaire : solution exacte, puis recherche numérique avec `optim()` ;
+2. ajuster le modèle de Schaefer à des **données simulées**, dont on connaît
+   les vraies valeurs des paramètres ;
+3. ajuster le modèle à de **vraies données**, celles du thon germon de
+   l'Atlantique Sud, et en déduire le MSY et l'état du stock.
+
+**Durée** : environ 2 heures.
+
+**Rendu** : ce document complété (`.qmd` **et** `.html`), à envoyer par mail à
+l'intervenant à la fin de la demi-journée. Il est noté. Commentez vos
+résultats à la place de *(commentez ici)*.
+
+Les solutions sont dans les encadrés repliés : essayez d'abord seul !
+
+```{r}
+#| label: packages
+if (!requireNamespace("ggplot2", quietly = TRUE)) install.packages("ggplot2")
+library(ggplot2)
+```
+
+# Rappels
+
+## Le modèle et ses points de référence
+
+Le modèle de Schaefer en temps discret s'écrit :
+
+$$
+B_{t+1} = B_t + r\,B_t\left(1 - \frac{B_t}{K}\right) - C_t
+$$
+
+avec $t$ l'année, $B_t$ la biomasse, $r$ le taux intrinsèque
+d'accroissement, $K$ la capacité de charge (biomasse
+d'équilibre du stock non exploité, ou biomasse vierge) et $C_t$ les captures.
+
+On peut aussi l'écrire en temps continu :
+
+$$
+\frac{dB}{dt} = rB \left(1 - \frac{B}{K}\right) - C
+$$
+
+Le **rendement maximal durable** (RMD, ou MSY pour *Maximum Sustainable
+Yield*) est la plus grande capture que l'on peut prélever chaque année sans
+faire baisser le stock. À l'équilibre, la biomasse ne varie plus, donc sa
+dérivée s'annule :
+
+$$
+\frac{dB}{dt} = 0
+\quad\Leftrightarrow\quad
+C = rB \left(1 - \frac{B}{K}\right)
+$$
+
+Pour trouver le MSY, on cherche la biomasse qui maximise cette capture
+d'équilibre. On dérive donc $C$ par rapport à $B$ :
+
+$$
+\frac{dC}{dB} = \left(rB - \frac{rB^2}{K}\right)'
+= r - \frac{2rB}{K}
+= r \left(1 - \frac{2B}{K} \right)
+$$
+
+La dérivée s'annule pour la biomasse optimale $B_{MSY}$ :
+
+$$
+r \left(1 - \frac{2B_{MSY}}{K} \right) = 0
+\quad\Leftrightarrow\quad
+\frac{2B_{MSY}}{K} = 1
+\quad\Leftrightarrow\quad
+B_{MSY} = \frac{K}{2}
+$$
+
+On en déduit le rendement maximal durable :
+
+$$
+MSY = rB_{MSY} \left(1 - \frac{B_{MSY}}{K}\right)
+= r\frac{K}{2} \left(1 - \frac{1}{2}\right)
+= \frac{rK}{4}
+$$
+
+La mortalité par pêche correspondante est $F_{MSY} = MSY / B_{MSY} = r/2$.
+
+| Point de référence | Formule |
+|---|---|
+| $B_{MSY}$ | $K/2$ |
+| $MSY$ | $rK/4$ |
+| $F_{MSY}$ | $r/2$ |
+
+: Points de référence du modèle de Schaefer
+
+## L'indice d'abondance
+
+On ne peut presque jamais mesurer directement la biomasse d'un stock. On
+utilise à la place un **indice d'abondance** $I$, supposé proportionnel à la
+biomasse :
+
+$$
+I_t = q\,B_t
+$$
+
+où $q$ est le **coefficient de capturabilité**, inconnu et donc à estimer.
+L'indice peut être :
+
+- une **capture par unité d'effort** (CPUE) : $C/E$, la capture divisée par
+  l'effort de pêche d'une flottille bien suivie et au comportement stable ;
+- un indice de **campagne scientifique**, indépendant de la pêche ;
+- une estimation par marquage-recapture ou par acoustique.
+
+L'hypothèse $I = qB$ est fragile : $q$ peut changer avec les techniques de
+pêche ou le comportement des poissons. Une CPUE stable peut ainsi masquer une
+baisse du stock si les pêcheurs deviennent plus efficaces.
+
+**Le problème à résoudre** : connaissant les captures $C_t$ et l'indice
+$I_t$, trouver $r$, $K$ et $q$.
+
+# Le principe de l'ajustement : la régression linéaire
+
+Avant le modèle de Schaefer, prenons le cas le plus simple. Il s'agit de
+reprendre les calculs qui donnent les coefficients d'une droite ajustée à un
+nuage de points : en théorie un rappel pratique, en pratique un rappel
+théorique.
+
+## La solution exacte
+
+Soit deux variables $\{y_i, x_i\}_{i=1,\dots,n}$, où $x$ est la variable
+explicative et $y$ la variable à expliquer. On cherche à ajuster le modèle de
+régression linéaire :
+
+$$
+y_i = a\,x_i + b + \epsilon_i
+$$
+
+avec $\epsilon_i$ le terme d'erreur, $a$ la pente et $b$ l'ordonnée à
+l'origine. On utilise la méthode des **moindres carrés ordinaires** : $a$ et
+$b$ doivent minimiser la somme des carrés des erreurs. On suppose vérifiées
+les hypothèses habituelles : indépendance des erreurs, absence de corrélation
+entre variable explicative et erreur, variance constante (homoscédasticité),
+normalité des erreurs.
+
+On cherche donc :
+
+$$
+(\hat a, \hat b) = \underset{a,b}{\operatorname{argmin}} \; S(a, b)
+\quad\text{avec}\quad
+S(a, b) = \sum_{i=1}^{n}\epsilon_i^2 = \sum_{i=1}^{n}(y_i - a x_i - b)^2
+$$
+
+« argmin » désigne les valeurs des arguments ($a$ et $b$) qui rendent $S$
+minimale. $S$ est une fonction dérivable de deux variables réelles : son
+minimum annule ses deux dérivées partielles :
+
+$$
+\begin{cases}
+\dfrac{\partial S}{\partial a}(a,b) = 0\\[2mm]
+\dfrac{\partial S}{\partial b}(a,b) = 0
+\end{cases}
+$$
+
+En utilisant la règle de dérivation $(u^2)' = 2u'u$ :
+
+$$
+\begin{cases}
+\dfrac{\partial S}{\partial b}(a,b) = -2\sum_{i=1}^{n}(y_i - a x_i - b) = 0\\[2mm]
+\dfrac{\partial S}{\partial a}(a,b) = -2\sum_{i=1}^{n}x_i(y_i - a x_i - b) = 0
+\end{cases}
+$$
+
+La première équation donne :
+
+$$
+\begin{aligned}
+& \sum_{i=1}^{n}y_i - a\sum_{i=1}^{n}x_i - nb = 0\\
+\Leftrightarrow\; & nb = \sum_{i=1}^{n}y_i - a\sum_{i=1}^{n}x_i\\
+\Leftrightarrow\; & b = \frac{1}{n}\sum_{i=1}^{n}y_i - a\,\frac{1}{n}\sum_{i=1}^{n}x_i\\
+\Leftrightarrow\; & b = \bar y - a\,\bar x
+\end{aligned}
+$$
+
+avec $\bar x$ et $\bar y$ les moyennes empiriques des $x_i$ et des $y_i$.
+
+La deuxième équation donne :
+
+$$
+\sum_{i=1}^{n}x_iy_i - a\sum_{i=1}^{n}x_i^2 - b\sum_{i=1}^{n}x_i = 0
+$$
+
+En remplaçant $b$ par $\bar y - a\bar x$ :
+
+$$
+\begin{aligned}
+& \sum_{i=1}^{n}x_iy_i - a\sum_{i=1}^{n}x_i^2 - (\bar y - a\bar x)\sum_{i=1}^{n}x_i = 0\\
+\Leftrightarrow\; & a\left(\sum_{i=1}^{n}x_i^2 - \bar x\sum_{i=1}^{n}x_i\right) = \sum_{i=1}^{n}x_iy_i - \bar y\sum_{i=1}^{n}x_i\\
+\Leftrightarrow\; & a = \frac{\sum_{i=1}^{n}x_i(y_i - \bar y)}{\sum_{i=1}^{n}x_i(x_i - \bar x)}\\
+\Leftrightarrow\; & a = \frac{\sum_{i=1}^{n}(x_i - \bar x)(y_i - \bar y)}{\sum_{i=1}^{n}(x_i - \bar x)^2}
+\end{aligned}
+$$
+
+La dernière ligne utilise le fait que $\sum_i \bar x (y_i - \bar y) = 0$ et
+$\sum_i \bar x (x_i - \bar x) = 0$.
+
+En résumé, la droite des moindres carrés a pour pente et ordonnée à
+l'origine :
+
+$$
+\hat a = \frac{\sum_{i=1}^{n}(x_i - \bar x)(y_i - \bar y)}{\sum_{i=1}^{n}(x_i - \bar x)^2}
+\qquad
+\hat b = \bar y - \hat a\,\bar x
+$$
+
+Appliquons ces formules à un petit jeu de données :
+
+```{r}
+#| label: reglin-donnees
+df <- data.frame(x = c(1, 3, 4, 9), y = c(1, 5, 7, 8))
+df
+a_exact <- sum((df$x - mean(df$x)) * (df$y - mean(df$y))) / sum((df$x - mean(df$x))^2)
+b_exact <- mean(df$y) - a_exact * mean(df$x)
+c(a = a_exact, b = b_exact)
+```
+
+## La solution numérique : `optim()`
+
+Pour la régression linéaire, on a pu résoudre le problème à la main. Pour le
+modèle de Schaefer, ce sera impossible : la biomasse dépend de $r$ et $K$ à
+travers une boucle sur les années. On utilise alors un **algorithme
+d'optimisation**, qui essaie des valeurs des paramètres et les améliore pas à
+pas jusqu'à trouver le minimum de la fonction. La fonction `optim()` de R le
+fait, par défaut avec l'algorithme de Nelder-Mead.
+
+Il faut lui donner :
+
+1. une **fonction de coût** : elle prend en premier argument un vecteur de
+   paramètres et renvoie le nombre à minimiser (ici la somme des carrés) ;
+2. des **valeurs de départ** pour les paramètres.
+
+```{r}
+#| label: reglin-optim
+# fonction de coût : par[1] = a, par[2] = b
+somme_carres <- function(par, data) {
+  sum((data$y - par[1] * data$x - par[2])^2)
+}
+somme_carres(c(1, 0), data = df)          # avec a = 1 et b = 0
+somme_carres(c(a_exact, b_exact), data = df)  # au minimum
+
+ajust <- optim(par = c(0, 1), fn = somme_carres, data = df)
+ajust$par        # valeurs estimées de a et b
+ajust$value      # somme des carrés au minimum
+```
+
+### À vous
+
+1. Comparez les estimations de `optim()` avec la solution exacte.
+2. Vérifiez avec la fonction de régression de R : `lm(y ~ x, data = df)`.
+3. Relancez `optim()` avec d'autres valeurs de départ (par exemple
+   `c(5, -10)`). Le résultat change-t-il ?
+
+```{r}
+#| label: avous-reglin
+# votre code ici
+
+```
+
+*(commentez ici)*
+
+::: {.callout-tip collapse="true"}
+## Solution
+
+```{r}
+#| label: solution-reglin
+c(a = a_exact, b = b_exact)
+ajust$par
+coef(lm(y ~ x, data = df))
+optim(par = c(5, -10), fn = somme_carres, data = df)$par
+```
+
+Les trois méthodes donnent la même droite, à quelques millièmes près pour
+`optim()`, qui s'arrête dès qu'il ne progresse plus. Le résultat ne dépend
+pas des valeurs de départ, car la somme des carrés n'a ici qu'un seul
+minimum. Ce ne sera pas toujours le cas pour des modèles plus complexes.
+:::
+
+# Ajuster le modèle de Schaefer à des données simulées
+
+On reprend les fonctions du TD précédent, en permettant cette fois des
+captures **différentes chaque année** (un vecteur `captures`).
+
+```{r}
+#| label: fonctions
+biomasse_suivante <- function(B, r, K, C = 0) {
+  max(B + r * B * (1 - B / K) - C, 0)
+}
+
+# biomasse de chaque année, à partir de B0 et d'une série de captures
+simuler_serie <- function(B0, r, K, captures) {
+  n <- length(captures)
+  B <- numeric(n)
+  B[1] <- B0
+  for (t in 1:(n - 1)) {
+    B[t + 1] <- biomasse_suivante(B[t], r, K, captures[t])
+  }
+  B
+}
+```
+
+## Générer des données
+
+On fixe les **vraies valeurs** des paramètres, on simule la biomasse avec une
+série de captures qui augmentent puis diminuent, puis on fabrique un indice
+d'abondance **bruité**, comme le serait une vraie CPUE.
+
+```{r}
+#| label: simulation
+#| fig-height: 4
+set.seed(1)                    # pour obtenir toujours le même bruit
+r_vrai <- 0.4
+K_vrai <- 1000
+q_vrai <- 0.01
+annees <- 1:30
+captures <- c(seq(20, 140, length.out = 15), seq(140, 60, length.out = 15))
+B_vrai <- simuler_serie(B0 = K_vrai, r_vrai, K_vrai, captures)
+# indice = q * B, multiplié par une erreur aléatoire d'environ 10 %
+indice <- q_vrai * B_vrai * exp(rnorm(30, mean = 0, sd = 0.1))
+
+simu <- data.frame(annee = annees, captures = captures, B = B_vrai, indice = indice)
+ggplot(simu, aes(annee, indice)) +
+  geom_point(colour = "blue3") +
+  geom_line(aes(y = q_vrai * B), colour = "grey50") +
+  labs(x = "Année", y = "Indice d'abondance",
+       subtitle = "points : indice observé ; ligne : q x biomasse vraie") +
+  theme_minimal()
+```
+
+## La fonction de coût
+
+La fonction de coût prend les paramètres, simule la biomasse avec les
+captures observées, calcule l'indice prédit $\hat I_t = q\,\hat B_t$ et
+renvoie la somme des carrés des écarts avec l'indice observé :
+
+$$
+S(r, K, q) = \sum_t \left[\ln I_t - \ln(q\,\hat B_t)\right]^2
+$$
+
+Deux astuces :
+
+- on compare les **logarithmes** des indices, car les erreurs d'un indice
+  d'abondance sont plutôt proportionnelles (multiplicatives) ;
+- on fait chercher à `optim()` le **logarithme** des paramètres :
+  `exp(par)` est toujours positif, ce qui évite des valeurs absurdes
+  ($r$ ou $K$ négatifs).
+
+On suppose enfin que le stock est **vierge** la première année :
+$B_1 = K$.
+
+```{r}
+#| label: cout-schaefer
+sce_schaefer <- function(par, captures, indice) {
+  r <- exp(par[1])
+  K <- exp(par[2])
+  q <- exp(par[3])
+  B <- simuler_serie(B0 = K, r, K, captures)
+  B <- pmax(B, 1e-6)                  # évite log(0) si le stock s'effondre
+  sum((log(indice) - log(q * B))^2)
+}
+
+# coût avec les vraies valeurs, puis avec de mauvaises valeurs
+sce_schaefer(log(c(0.4, 1000, 0.01)), captures, indice)
+sce_schaefer(log(c(0.2, 2000, 0.005)), captures, indice)
+```
+
+## Ajuster
+
+```{r}
+#| label: ajust-simu
+depart <- log(c(0.2, 2000, 0.005))   # valeurs de départ (r, K, q)
+fit <- optim(depart, sce_schaefer, captures = captures, indice = indice,
+             control = list(maxit = 5000))
+fit$convergence                      # 0 = l'algorithme a convergé
+estim <- exp(fit$par)
+names(estim) <- c("r", "K", "q")
+estim
+```
+
+### À vous
+
+1. Comparez les estimations de $r$, $K$ et $q$ avec les vraies valeurs.
+2. Calculez le MSY, $B_{MSY}$ et $F_{MSY}$ estimés et vrais.
+3. Simulez la biomasse avec les paramètres estimés et tracez-la avec la
+   biomasse vraie. Tracez aussi l'indice observé et l'indice prédit.
+
+```{r}
+#| label: avous-simu
+# votre code ici
+
+```
+
+*(commentez ici)*
+
+::: {.callout-tip collapse="true"}
+## Solution
+
+```{r}
+#| label: solution-simu
+#| fig-height: 4
+r_est <- estim["r"]
+K_est <- estim["K"]
+q_est <- estim["q"]
+
+# points de référence estimés et vrais
+data.frame(
+  quantite = c("MSY", "B_MSY", "F_MSY"),
+  vrai     = c(r_vrai * K_vrai / 4, K_vrai / 2, r_vrai / 2),
+  estime   = round(c(r_est * K_est / 4, K_est / 2, r_est / 2), 2)
+)
+
+# biomasse estimée et biomasse vraie
+simu$B_est <- simuler_serie(K_est, r_est, K_est, captures)
+ggplot(simu, aes(annee)) +
+  geom_line(aes(y = B), colour = "grey50", linewidth = 1) +
+  geom_line(aes(y = B_est), colour = "red3", linewidth = 1) +
+  labs(x = "Année", y = "Biomasse (t)",
+       subtitle = "gris : biomasse vraie ; rouge : biomasse estimée") +
+  theme_minimal()
+
+# indice observé et prédit
+simu$indice_pred <- q_est * simu$B_est
+ggplot(simu, aes(annee)) +
+  geom_point(aes(y = indice), colour = "blue3") +
+  geom_line(aes(y = indice_pred), colour = "red3", linewidth = 1) +
+  labs(x = "Année", y = "Indice d'abondance") +
+  theme_minimal()
+```
+
+L'ajustement retrouve des valeurs proches des vraies (r ≈ 0,35 au lieu de
+0,4 ; K ≈ 1100 au lieu de 1000) et un MSY très proche (environ 97 t au lieu
+de 100). L'écart vient du bruit de l'indice : avec d'autres tirages
+aléatoires, on obtiendrait des estimations un peu différentes. Le MSY est
+mieux estimé que $r$ et $K$ séparément : une sous-estimation de $r$ est
+compensée par une surestimation de $K$.
+:::
+
+## Quand l'ajustement échoue : le manque de contraste
+
+### À vous
+
+Recommencez avec des captures qui ne font qu'**augmenter**, de 20 à 120 t
+sur 30 ans (`seq(20, 120, length.out = 30)`) : générez un nouvel indice, puis
+ajustez le modèle. Que constatez-vous ?
+
+```{r}
+#| label: avous-contraste
+# votre code ici
+
+```
+
+*(commentez ici)*
+
+::: {.callout-tip collapse="true"}
+## Solution
+
+```{r}
+#| label: solution-contraste
+captures2 <- seq(20, 120, length.out = 30)
+B2 <- simuler_serie(K_vrai, r_vrai, K_vrai, captures2)
+indice2 <- q_vrai * B2 * exp(rnorm(30, mean = 0, sd = 0.1))
+fit2 <- optim(depart, sce_schaefer, captures = captures2, indice = indice2,
+              control = list(maxit = 5000))
+estim2 <- exp(fit2$par)
+names(estim2) <- c("r", "K", "q")
+estim2
+```
+
+Les estimations sont très loin des vraies valeurs, alors que le modèle est
+exactement le bon. Quand le stock ne fait que décliner (*one-way trip*), les
+données ne permettent pas de distinguer un stock très productif mais petit
+d'un stock peu productif mais grand : de nombreuses combinaisons de $r$ et
+$K$ expliquent aussi bien l'indice. Pour bien estimer ces paramètres, il faut
+des données **contrastées**, avec des phases de baisse et de reconstitution.
+:::
+
+# Un exemple réel : le thon germon de l'Atlantique Sud
+
+Le fichier `data/albacore.dat` contient les captures (en milliers de tonnes)
+et la CPUE des palangriers (en kg pour 100 hameçons) du **thon germon**
+(*Thunnus alalunga*, « albacore » en anglais) de l'Atlantique Sud, de 1967 à
+1989. Ces données ont été utilisées par Polacheck, Hilborn et Punt (1993)
+pour comparer les méthodes d'ajustement des modèles de production. Attention
+au faux ami : Schaefer travaillait, lui, sur l'*albacore* au sens français,
+le thon à nageoires jaunes du Pacifique Est.
+
+```{r}
+#| label: germon-lecture
+germon <- read.table("data/albacore.dat", header = TRUE)
+str(germon)
+```
+
+### À vous
+
+1. Représentez les captures et la CPUE au cours du temps. Que suggère la
+   CPUE ?
+2. Ajustez le modèle de Schaefer (valeurs de départ suggérées : $r = 0{,}3$,
+   $K = 250$, $q = 0{,}25$). Donnez $r$, $K$, $q$, le MSY, $B_{MSY}$ et
+   $F_{MSY}$.
+3. Tracez la CPUE observée et prédite.
+4. Calculez pour chaque année $B/B_{MSY}$ et $F/F_{MSY}$, avec $F = C/B$.
+   Dans quel état est le stock en 1989 ? Les captures des dernières années
+   sont-elles durables ?
+
+```{r}
+#| label: avous-germon
+# votre code ici
+
+```
+
+*(commentez ici)*
+
+::: {.callout-tip collapse="true"}
+## Solution
+
+```{r}
+#| label: solution-germon
+#| fig-height: 4
+# 1. les données
+ggplot(germon, aes(Year, Catch)) +
+  geom_col(fill = "dodgerblue") +
+  labs(x = NULL, y = "Captures (milliers de t)") +
+  theme_minimal()
+ggplot(germon, aes(Year, Index)) +
+  geom_line(colour = "blue3") +
+  geom_point(colour = "blue3") +
+  labs(x = NULL, y = "CPUE (kg / 100 hameçons)") +
+  theme_minimal()
+
+# 2. ajustement
+fit_g <- optim(log(c(0.3, 250, 0.25)), sce_schaefer,
+               captures = germon$Catch, indice = germon$Index,
+               control = list(maxit = 5000))
+fit_g$convergence
+r_g <- exp(fit_g$par[1])
+K_g <- exp(fit_g$par[2])
+q_g <- exp(fit_g$par[3])
+msy_g <- r_g * K_g / 4
+bmsy_g <- K_g / 2
+fmsy_g <- r_g / 2
+round(c(r = r_g, K = K_g, q = q_g, MSY = msy_g, B_MSY = bmsy_g, F_MSY = fmsy_g), 3)
+
+# 3. CPUE observée et prédite
+germon$B <- simuler_serie(K_g, r_g, K_g, germon$Catch)
+germon$cpue_pred <- q_g * germon$B
+ggplot(germon, aes(Year)) +
+  geom_point(aes(y = Index), colour = "blue3") +
+  geom_line(aes(y = cpue_pred), colour = "red3", linewidth = 1) +
+  labs(x = NULL, y = "CPUE (kg / 100 hameçons)",
+       subtitle = "points : observé ; ligne : prédit") +
+  theme_minimal()
+
+# 4. état du stock
+germon$B_Bmsy <- germon$B / bmsy_g
+germon$F_Fmsy <- (germon$Catch / germon$B) / fmsy_g
+tail(germon[, c("Year", "Catch", "B_Bmsy", "F_Fmsy")], 5)
+
+ggplot(germon, aes(B_Bmsy, F_Fmsy)) +
+  annotate("rect", xmin = 0, xmax = 1, ymin = 1, ymax = Inf, fill = "red3", alpha = 0.2) +
+  annotate("rect", xmin = 1, xmax = Inf, ymin = 0, ymax = 1, fill = "forestgreen", alpha = 0.2) +
+  geom_path(colour = "grey40") +
+  geom_point(colour = "blue3") +
+  geom_text(data = germon[c(1, nrow(germon)), ], aes(label = Year), vjust = -1) +
+  geom_vline(xintercept = 1) +
+  geom_hline(yintercept = 1) +
+  labs(x = "B / B_MSY", y = "F / F_MSY") +
+  theme_minimal()
+```
+
+On estime $r \approx 0{,}32$, $K \approx 243$ milliers de tonnes et un MSY
+d'environ 19,5 milliers de tonnes par an. La CPUE a diminué de plus de
+moitié : selon le modèle, la biomasse est passée sous $B_{MSY}$ à la fin des
+années 1980. En 1989, $B/B_{MSY} \approx 0{,}6$ et $F/F_{MSY} \approx 2$ :
+le stock est **surpêché** et **surexploité** (quadrant rouge du diagramme de
+Kobe). Les captures de la fin des années 1980, entre 25 et 37 milliers de
+tonnes, dépassent nettement le MSY : il faudrait les réduire pour permettre
+au stock de se reconstituer.
+
+Ces résultats reposent sur des hypothèses fortes (stock vierge en 1967,
+capturabilité constante, erreur uniquement sur l'indice). D'autres méthodes
+donnent des valeurs un peu différentes sur ces mêmes données : c'est une
+illustration de la méthode, pas une évaluation officielle du stock.
+:::
+
+# Synthèse
+
+En quelques phrases :
+
+1. Quelles données faut-il pour ajuster un modèle de Schaefer ?
+2. Pourquoi ajuste-t-on le logarithme de l'indice et des paramètres ?
+3. Pourquoi l'ajustement peut-il échouer même quand le modèle est le bon ?
+
+*(rédigez ici)*
+
+::: {.callout-tip collapse="true"}
+## Solution
+
+1. Une série de **captures** (idéalement depuis le début de la pêcherie) et
+   une série d'**indice d'abondance** (CPUE ou campagne scientifique) sur les
+   mêmes années.
+2. Les erreurs d'un indice d'abondance sont plutôt proportionnelles à sa
+   valeur, d'où le logarithme de l'indice ; chercher le logarithme des
+   paramètres garantit qu'ils restent positifs.
+3. Si les données manquent de **contraste** (un déclin continu, sans phase de
+   reconstitution), plusieurs combinaisons de $r$ et $K$ expliquent aussi bien
+   l'indice. Le bruit des observations ajoute de l'incertitude.
+:::
+
+::: {.callout-note}
+## Pour aller plus loin
+
+Le package **MQMF** (Haddon 2020) fournit des fonctions toutes prêtes pour
+ajuster ce modèle (`fitSPM()`), évaluer l'incertitude par bootstrap
+(`spmboot()`) et faire des projections (`spmproj()`). Les modèles utilisés
+aujourd'hui, comme SPiCT, ajoutent une erreur sur la dynamique elle-même
+(erreur de processus) et quantifient l'incertitude des estimations.
+:::
+
+```{r}
+#| label: session
+sessionInfo()
+```

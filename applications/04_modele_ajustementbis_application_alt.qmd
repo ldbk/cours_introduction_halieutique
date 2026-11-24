@@ -1,0 +1,487 @@
+---
+title: "TD 6 — Ajuster le modèle de Schaefer à une espèce de Manche Est (correction)"
+subtitle: "Introduction à l'halieutique — M2 Sciences de la Mer"
+author: "Laurent Dubroca"
+date: today
+lang: fr
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    number-sections: true
+    embed-resources: true
+    code-tools: true
+    theme: cosmo
+execute:
+  echo: true
+  warning: false
+  message: false
+---
+
+# Objectifs et consignes {.unnumbered}
+
+Au TD 5, vous avez ajusté le modèle de Schaefer à des données simulées, puis
+aux données du germon. Vous allez maintenant l'appliquer à **l'espèce de
+Manche Est que vous avez choisie au TD 3**, en combinant deux sources :
+
+- les **captures** : les débarquements français en Manche Est (fichier
+  `landings.csv`, déjà utilisé au TD 3) ;
+- un **indice d'abondance** indépendant de la pêche : l'indice de la campagne
+  scientifique **CGFS** (fichier `cgfs_indices.csv`).
+
+1. comprendre d'où vient l'indice CGFS ;
+2. assembler captures et indice pour votre espèce ;
+3. ajuster le modèle, puis juger la qualité et la fiabilité des résultats ;
+4. tester l'effet d'une hypothèse sur $r$ et poser un diagnostic sur l'état
+   du stock.
+
+**Durée** : environ 1 h 30.
+
+**Rendu** : ce document complété (`.qmd` **et** `.html`), à envoyer par mail à
+l'intervenant à la fin de la demi-journée. Il est noté. Commentez vos
+résultats à la place de *(commentez ici)*.
+
+Les solutions sont dans les encadrés repliés : essayez d'abord seul !
+
+```{r}
+#| label: packages
+if (!requireNamespace("ggplot2", quietly = TRUE)) install.packages("ggplot2")
+library(ggplot2)
+```
+
+# D'où vient l'indice : la campagne CGFS
+
+## La campagne
+
+La **CGFS** (*Channel Ground Fish Survey*) est une campagne scientifique de
+l'Ifremer, menée **chaque automne depuis 1988** en Manche Est et dans le sud
+de la mer du Nord. Elle suit un protocole standardisé :
+
+- même **période** : essentiellement en octobre ;
+- même **engin** : un chalut de fond GOV 36/47 ;
+- **traits courts** d'environ 30 minutes, répartis sur toute la zone ;
+- de **60 à 110 traits** par an, selon les années.
+
+À chaque trait, toutes les espèces capturées sont triées, comptées et pesées.
+On en déduit une **densité** : la masse capturée divisée par la surface
+balayée par le chalut (en kg/km²).
+
+L'intérêt d'une campagne scientifique est d'être **indépendante de la
+pêche** : son protocole ne change pas avec la stratégie des pêcheurs, les
+quotas ou le prix du poisson, contrairement à une CPUE commerciale. Le
+navire a toutefois changé en 2015, ce qui a pu modifier légèrement la
+capturabilité des espèces.
+
+## Le calcul de l'indice
+
+La zone est découpée en **strates** : les rectangles statistiques du CIEM.
+L'indice est calculé selon les formules de l'**échantillonnage aléatoire
+stratifié** :
+
+$$
+\bar d_{st} = \sum_h W_h \, \bar d_h
+\qquad\text{avec}\qquad
+W_h = \frac{A_h}{\sum_h A_h}
+$$
+
+où $\bar d_h$ est la densité moyenne des traits de la strate $h$ et $A_h$ sa
+surface marine. Chaque strate pèse donc selon sa surface, et non selon le
+nombre de traits qu'on y a faits. La variance de l'indice est
+$V(\bar d_{st}) = \sum_h W_h^2 \, s_h^2 / n_h$, avec $s_h^2$ la variance des
+densités et $n_h$ le nombre de traits de la strate $h$.
+
+L'indice est calculé sur les 11 strates échantillonnées presque chaque année,
+pour rester comparable dans le temps.
+
+## Le fichier des indices
+
+```{r}
+#| label: lecture-indices
+indices <- read.csv("data/cgfs_indices.csv")
+str(indices)
+```
+
+| Variable | Signification |
+|---|---|
+| `spp` | nom scientifique de l'espèce |
+| `year` | année de la campagne |
+| `n_traits`, `n_strates` | nombre de traits et de strates échantillonnés |
+| `densite_kg_km2` | **indice** : densité moyenne stratifiée (kg/km²) |
+| `cv_kg` | coefficient de variation de l'indice (précision) |
+| `ic_bas_kg`, `ic_haut_kg` | intervalle de confiance à 95 % |
+| `densite_nb_km2` | même indice, en nombre d'individus par km² |
+
+: Principales variables de `cgfs_indices.csv`
+
+::: {.callout-warning}
+## Un indice, pas une biomasse
+
+La densité moyenne est un **indice relatif** : le chalut ne capture pas tous
+les poissons présents sur sa trajectoire, et sa capturabilité dépend de
+l'espèce. Les espèces vivant sur le fond (soles, plies, raies) sont bien
+échantillonnées ; les espèces pélagiques ou très mobiles (maquereau, bar) le
+sont beaucoup moins.
+:::
+
+# Assembler captures et indice
+
+### À vous
+
+1. Reprenez l'espèce choisie au TD 3. Stockez son code FAO dans
+   `espece_fao` et son nom scientifique dans `espece_sci` (vérifiez qu'il
+   existe dans `indices$spp`).
+2. Calculez les captures annuelles en **tonnes** à partir de
+   `data/landings.csv`, sans l'année 2026 (incomplète).
+3. Extrayez l'indice (`densite_kg_km2`) de votre espèce.
+4. Réunissez les deux dans un tableau `donnees` (colonnes `annee`,
+   `captures`, `indice`) avec `merge()`, puis représentez les deux séries.
+
+```{r}
+#| label: avous-donnees
+# votre code ici
+
+```
+
+*(commentez ici)*
+
+::: {.callout-tip collapse="true"}
+## Solution
+
+```{r}
+#| label: solution-donnees
+#| fig-height: 3.5
+espece_fao <- "BRB"                    # dorade grise ou griset
+espece_sci <- "Spondyliosoma cantharus"
+espece_sci %in% indices$spp
+
+lan <- read.csv("data/landings.csv")
+sp <- lan[lan$faocode == espece_fao & lan$year < 2026, ]
+captures <- aggregate(totalweight ~ year, data = sp, FUN = sum)
+captures$captures <- captures$totalweight / 1000
+
+ind <- indices[indices$spp == espece_sci, c("year", "densite_kg_km2", "cv_kg")]
+
+donnees <- merge(captures[, c("year", "captures")], ind, by = "year")
+names(donnees) <- c("annee", "captures", "indice", "cv")
+donnees
+
+ggplot(donnees, aes(annee, captures)) +
+  geom_col(fill = "dodgerblue") +
+  labs(x = NULL, y = "Captures (t)", title = "Débarquements français en Manche Est") +
+  theme_minimal()
+ggplot(donnees, aes(annee, indice)) +
+  geom_line(colour = "blue3") +
+  geom_point(colour = "blue3") +
+  labs(x = NULL, y = "Indice CGFS (kg/km²)", title = "Indice d'abondance CGFS") +
+  theme_minimal()
+```
+
+Les débarquements de dorade grise fluctuent entre 600 et 1 900 t par an, avec
+un pic de 2007 à 2009, mais sans tendance nette sur la période : les données
+offrent donc **peu de contraste**. L'indice CGFS est très variable d'une année
+à l'autre (CV de 14 à 57 %) : la dorade grise, qui se déplace en bancs, est
+moyennement bien échantillonnée par un chalut de fond. Surtout, l'indice est
+nettement plus élevé depuis 2015 (environ 180 kg/km² en moyenne, contre
+100 kg/km² avant). Ce saut coïncide avec le **changement de navire** de la
+campagne : il peut refléter en partie un changement de capturabilité plutôt
+qu'une hausse de l'abondance.
+:::
+
+# Ajuster le modèle
+
+On reprend les fonctions du TD 5, sans modification.
+
+```{r}
+#| label: fonctions
+biomasse_suivante <- function(B, r, K, C = 0) {
+  max(B + r * B * (1 - B / K) - C, 0)
+}
+
+simuler_serie <- function(B0, r, K, captures) {
+  n <- length(captures)
+  B <- numeric(n)
+  B[1] <- B0
+  for (t in 1:(n - 1)) {
+    B[t + 1] <- biomasse_suivante(B[t], r, K, captures[t])
+  }
+  B
+}
+
+sce_schaefer <- function(par, captures, indice) {
+  r <- exp(par[1])
+  K <- exp(par[2])
+  q <- exp(par[3])
+  B <- simuler_serie(B0 = K, r, K, captures)
+  B <- pmax(B, 1e-6)
+  sum((log(indice) - log(q * B))^2)
+}
+```
+
+::: {.callout-note}
+Comme au TD 5, on suppose le stock **vierge** la première année ($B_1 = K$).
+C'est une hypothèse forte ici : en 2000, la pêche en Manche Est existe depuis
+longtemps. Gardez-la en tête pour interpréter les résultats.
+:::
+
+### À vous
+
+1. Ajustez le modèle à vos données avec `optim()`, en partant de
+   $r = 0{,}3$, $K = 10\,000$ t (plusieurs fois les plus fortes captures)
+   et $q = 0{,}005$.
+2. Recommencez avec deux autres jeux de valeurs de départ, par exemple
+   `c(0.5, 5000, 0.01)` et `c(0.2, 30000, 0.002)`. Les estimations
+   sont-elles stables ?
+3. Calculez le MSY. Les valeurs de $r$ obtenues sont-elles réalistes ?
+   (Souvenez-vous du TD 4 : que se passe-t-il quand $r$ dépasse 2 ?)
+
+```{r}
+#| label: avous-ajust
+# votre code ici
+
+```
+
+*(commentez ici)*
+
+::: {.callout-tip collapse="true"}
+## Solution
+
+```{r}
+#| label: solution-ajust
+fit1 <- optim(log(c(0.3, 10000, 0.005)), sce_schaefer,
+              captures = donnees$captures, indice = donnees$indice,
+              control = list(maxit = 5000))
+fit2 <- optim(log(c(0.5, 5000, 0.01)), sce_schaefer,
+              captures = donnees$captures, indice = donnees$indice,
+              control = list(maxit = 5000))
+fit3 <- optim(log(c(0.2, 30000, 0.002)), sce_schaefer,
+              captures = donnees$captures, indice = donnees$indice,
+              control = list(maxit = 5000))
+exp(fit1$par)
+exp(fit2$par)
+exp(fit3$par)
+
+r1 <- exp(fit1$par[1])
+K1 <- exp(fit1$par[2])
+r1 * K1 / 4        # MSY
+```
+
+Les trois ajustements convergent vers les mêmes valeurs : $r \approx 0{,}9$,
+$K \approx 5\,300$ t et $q \approx 0{,}035$, soit un MSY d'environ 1 200 t.
+L'ajustement est donc **stable**, et $r$ reste inférieur à 2 : on n'est pas
+dans le régime oscillant ou chaotique vu au TD 4. Mais $r \approx 0{,}9$ est
+une valeur élevée, à confronter à la biologie de l'espèce.
+
+Il faut rester prudent :
+
+- le MSY estimé (1 200 t) est proche des captures moyennes (environ 980 t) :
+  le modèle s'appuie surtout sur le niveau des captures, faute de contraste ;
+- le modèle ajuste mal l'indice, très bruité, et ne peut pas reproduire le
+  saut de 2015, probablement lié au changement de navire ;
+- les captures ne comprennent que les débarquements français en Manche Est,
+  sans les captures étrangères, la pêche de loisir ni les rejets ;
+- l'hypothèse $B_1 = K$ est fausse.
+
+Un ajustement stable n'est pas forcément un ajustement **juste**.
+:::
+
+# Ajouter une hypothèse sur r
+
+Quand les données ne suffisent pas, on peut **fixer** un paramètre à partir
+de connaissances extérieures : biologie de l'espèce, espèces proches, bases
+de données comme FishBase. Pour une espèce longévive à maturité tardive, on
+attend un $r$ plutôt faible, de l'ordre de 0,1 à 0,5 ; pour une espèce à vie
+courte, il peut être plus élevé.
+
+La fonction de coût suivante reçoit $r$ comme **argument fixe** et n'estime
+que $K$ et $q$.
+
+```{r}
+#| label: fonction-r-fixe
+sce_schaefer_r <- function(par, r, captures, indice) {
+  K <- exp(par[1])
+  q <- exp(par[2])
+  B <- simuler_serie(B0 = K, r, K, captures)
+  B <- pmax(B, 1e-6)
+  sum((log(indice) - log(q * B))^2)
+}
+```
+
+### À vous
+
+1. Ajustez $K$ et $q$ pour trois valeurs de $r$ : 0,15 ; 0,3 et 0,5. Comme
+   valeurs de départ, prenez les $K$ et $q$ estimés par l'ajustement libre
+   (`fit1$par[2:3]`, déjà en logarithme).
+2. Pour chaque valeur de $r$, calculez $K$, le MSY, $B/B_{MSY}$ et
+   $F/F_{MSY}$ en 2025 (avec $F = C/B$). Rassemblez-les dans un tableau.
+3. Pour la valeur de $r$ qui vous paraît la plus plausible, tracez l'indice
+   observé et l'indice prédit.
+4. Les conclusions sur l'état du stock dépendent-elles de $r$ ? Certaines
+   valeurs de $r$ donnent-elles des résultats absurdes ? Pourquoi ?
+
+```{r}
+#| label: avous-rfixe
+# votre code ici
+
+```
+
+*(commentez ici)*
+
+::: {.callout-tip collapse="true"}
+## Solution
+
+```{r}
+#| label: solution-rfixe
+#| fig-height: 3.5
+depart <- fit1$par[2:3]   # K et q de l'ajustement libre (en log)
+fa <- optim(depart, sce_schaefer_r, r = 0.15,
+            captures = donnees$captures, indice = donnees$indice,
+            control = list(maxit = 5000))
+fb <- optim(depart, sce_schaefer_r, r = 0.3,
+            captures = donnees$captures, indice = donnees$indice,
+            control = list(maxit = 5000))
+fc <- optim(depart, sce_schaefer_r, r = 0.5,
+            captures = donnees$captures, indice = donnees$indice,
+            control = list(maxit = 5000))
+
+# K estimés
+Ka <- exp(fa$par[1])
+Kb <- exp(fb$par[1])
+Kc <- exp(fc$par[1])
+
+# biomasses simulées
+Ba <- simuler_serie(Ka, 0.15, Ka, donnees$captures)
+Bb <- simuler_serie(Kb, 0.3, Kb, donnees$captures)
+Bc <- simuler_serie(Kc, 0.5, Kc, donnees$captures)
+
+n <- nrow(donnees)
+C2025 <- donnees$captures[n]
+resultats <- data.frame(
+  r = c(0.15, 0.3, 0.5),
+  K = round(c(Ka, Kb, Kc)),
+  MSY = round(c(0.15 * Ka, 0.3 * Kb, 0.5 * Kc) / 4),
+  B_Bmsy_2025 = round(c(Ba[n] / (Ka / 2), Bb[n] / (Kb / 2), Bc[n] / (Kc / 2)), 2),
+  F_Fmsy_2025 = round(c((C2025 / Ba[n]) / (0.15 / 2),
+                        (C2025 / Bb[n]) / (0.3 / 2),
+                        (C2025 / Bc[n]) / (0.5 / 2)), 2),
+  sce = round(c(fa$value, fb$value, fc$value), 2)
+)
+resultats
+
+# indice observé et prédit pour r = 0.5
+qc <- exp(fc$par[2])
+donnees$indice_pred <- qc * Bc
+ggplot(donnees, aes(annee)) +
+  geom_point(aes(y = indice), colour = "blue3") +
+  geom_line(aes(y = indice_pred), colour = "red3", linewidth = 1) +
+  labs(x = NULL, y = "Indice CGFS (kg/km²)",
+       subtitle = "points : observé ; ligne : prédit (r = 0,5)") +
+  theme_minimal()
+```
+
+Pour $r = 0{,}15$ et $r = 0{,}3$, les résultats sont **absurdes** : $K$
+devient immense (plus de 100 000 t), le stock n'est jamais entamé par la pêche
+($B/B_{MSY} \approx 2$, $F/F_{MSY} \approx 0$) et l'indice prédit est
+constant. L'explication est simple : avec un $r$ faible, la production
+maximale $rK/4$ ne peut égaler les quelque 1 000 t pêchées chaque année que
+si $K$ est très grand ; et comme l'indice ne baisse pas, le modèle préfère un
+stock gigantesque que la pêche ne touche pas. Ces valeurs de $r$ sont donc
+**incompatibles avec les données** (`sce` plus élevée : 6,64 contre 6,35 pour
+l'ajustement libre).
+
+Pour $r = 0{,}5$, on obtient une solution raisonnable : $K \approx 10\,000$ t
+et un MSY d'environ 1 270 t, proche de celui de l'ajustement libre. Le
+diagnostic en 2025 est le même que pour l'ajustement libre :
+$B/B_{MSY} \approx 1{,}6$ et $F/F_{MSY} \approx 0{,}3$. L'indice prédit
+varie peu et ne suit pas les fortes fluctuations de l'indice observé, ni son
+saut de 2015.
+:::
+
+# Diagnostic
+
+### À vous
+
+Pour la valeur de $r$ retenue à la question précédente, calculez $B/B_{MSY}$
+et $F/F_{MSY}$ pour chaque année, puis
+représentez la trajectoire du stock dans un diagramme de Kobe (comme au
+TD 5). Commentez.
+
+```{r}
+#| label: avous-kobe
+# votre code ici
+
+```
+
+*(commentez ici)*
+
+::: {.callout-tip collapse="true"}
+## Solution
+
+```{r}
+#| label: solution-kobe
+#| fig-height: 4.5
+donnees$B_Bmsy <- Bc / (Kc / 2)
+donnees$F_Fmsy <- (donnees$captures / Bc) / (0.5 / 2)
+ggplot(donnees, aes(B_Bmsy, F_Fmsy)) +
+  annotate("rect", xmin = 0, xmax = 1, ymin = 1, ymax = Inf, fill = "red3", alpha = 0.2) +
+  annotate("rect", xmin = 1, xmax = Inf, ymin = 0, ymax = 1, fill = "forestgreen", alpha = 0.2) +
+  geom_path(colour = "grey40") +
+  geom_point(colour = "blue3") +
+  geom_text(data = donnees[c(1, nrow(donnees)), ], aes(label = annee), vjust = -1) +
+  geom_vline(xintercept = 1) +
+  geom_hline(yintercept = 1) +
+  labs(x = "B / B_MSY", y = "F / F_MSY") +
+  theme_minimal()
+```
+
+Selon ce modèle ($r = 0{,}5$), le stock part de l'état vierge en 2000
+($B/B_{MSY} = 2$) et décline jusqu'en 2010, sans passer sous $B_{MSY}$
+($B/B_{MSY} \approx 1{,}1$ au minimum). La mortalité par pêche atteint
+$F_{MSY}$ de 2007 à 2009, pendant le pic des captures, puis redescend autour
+de 0,3 à 0,6 $F_{MSY}$. La biomasse remonte ensuite vers 1,6 $B_{MSY}$. Le
+stock resterait donc dans le quadrant vert sur presque toute la période.
+
+Ce diagnostic dépend largement de l'hypothèse $B_1 = K$, de la valeur de $r$
+et de captures partielles (seulement françaises, seulement en Manche Est, sans
+la pêche de loisir ni les rejets). Il ne doit pas être pris pour une
+évaluation du stock de dorade grise.
+:::
+
+# Synthèse
+
+En quelques phrases :
+
+1. Pourquoi l'indice d'une campagne scientifique est-il préférable à une CPUE
+   commerciale ?
+2. Pourquoi l'ajustement libre donne-t-il des résultats irréalistes pour votre
+   espèce (ou, s'il a bien fonctionné, pourquoi selon vous) ?
+3. Que change le fait de fixer $r$ ? Qu'est-ce qui reste incertain ?
+4. Citez trois limites des données utilisées.
+
+*(rédigez ici)*
+
+::: {.callout-tip collapse="true"}
+## Solution
+
+1. La campagne suit un protocole fixe (période, engin, plan
+   d'échantillonnage) : son indice ne dépend pas des stratégies des pêcheurs
+   ni de la réglementation, contrairement à une CPUE commerciale.
+2. Pour la dorade grise, l'ajustement libre est stable ($r \approx 0{,}9$),
+   mais il repose sur peu d'information : les captures varient peu (peu de
+   contraste), l'indice est très bruité et a fait un saut en 2015 avec le
+   changement de navire. Pour d'autres espèces, ces mêmes défauts conduisent
+   à des valeurs absurdes de $r$ (supérieures à 2).
+3. Fixer $r$ permet de tester une hypothèse biologique, mais les valeurs de
+   $K$ et du MSY en dépendent directement. Ici, les valeurs faibles de $r$
+   sont incompatibles avec les données ($K$ infini). Seules les conclusions
+   qui restent vraies pour toutes les valeurs plausibles de $r$ sont
+   robustes.
+4. Captures limitées aux débarquements français (ni étrangers, ni pêche de
+   loisir, ni rejets) ; zone limitée à la Manche Est alors que le stock est
+   plus étendu ; indice mal adapté aux espèces mobiles ; hypothèse
+   $B_1 = K$ ; changement de navire de la campagne en 2015.
+:::
+
+```{r}
+#| label: session
+sessionInfo()
+```
